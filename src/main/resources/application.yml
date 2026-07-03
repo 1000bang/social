@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: mySocial
+  datasource:
+    url: jdbc:postgresql://localhost:5432/mysocial
+    username: ${DB_USERNAME:mysocial}
+    password: ${DB_PASSWORD:mysocial}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+
+server:
+  port: 8080
