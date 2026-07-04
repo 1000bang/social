@@ -1,0 +1,8 @@
+build/
+.gradle/
+.idea/
+out/
+*.iml
+.git/
+.claude/
+k8s/
