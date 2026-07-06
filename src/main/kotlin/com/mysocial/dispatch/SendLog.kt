@@ -1,6 +1,8 @@
-package com.mysocial.message
+package com.mysocial.dispatch
 
 import com.mysocial.common.BaseTimeEntity
+import com.mysocial.template.AudienceType
+import com.mysocial.template.Template
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.EnumType
@@ -12,36 +14,27 @@ import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
-import jakarta.persistence.UniqueConstraint
-import java.time.Instant
-
-enum class MessageDirection {
-	INBOUND,
-	OUTBOUND,
-}
 
 @Entity
-@Table(
-	name = "direct_message",
-	uniqueConstraints = [UniqueConstraint(columnNames = ["platform_message_id"])],
-)
-class DirectMessage(
+@Table(name = "send_log")
+class SendLog(
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "thread_id", nullable = false)
-	val thread: DmThread,
+	@JoinColumn(name = "template_id", nullable = false)
+	val template: Template,
 
-	@Column(name = "platform_message_id", nullable = false)
-	val platformMessageId: String,
+	@Enumerated(EnumType.STRING)
+	@Column(name = "audience_type")
+	val audienceType: AudienceType? = null,
+
+	@Column(name = "recipient_platform_user_id", nullable = false)
+	val recipientPlatformUserId: String,
 
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false)
-	val direction: MessageDirection,
+	val result: SendResult,
 
-	@Column(nullable = false, columnDefinition = "TEXT")
-	val text: String,
-
-	@Column(name = "sent_at")
-	val sentAt: Instant? = null,
+	@Column(name = "failure_reason")
+	val failureReason: String? = null,
 ) : BaseTimeEntity() {
 
 	@Id

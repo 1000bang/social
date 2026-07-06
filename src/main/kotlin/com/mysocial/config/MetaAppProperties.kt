@@ -6,4 +6,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 data class MetaAppProperties(
 	val appId: String,
 	val appSecret: String,
+	val redirectUri: String,
+	val oauthScopes: String,
+	val deepLinkScheme: String,
 )

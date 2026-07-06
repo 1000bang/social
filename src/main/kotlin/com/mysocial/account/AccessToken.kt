@@ -12,7 +12,6 @@ import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
-import jakarta.persistence.Lob
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
 import java.time.Instant
@@ -29,9 +28,8 @@ class AccessToken(
 	@JoinColumn(name = "account_id", nullable = false)
 	val account: Account,
 
-	@Lob
 	@Convert(converter = AesGcmStringConverter::class)
-	@Column(name = "encrypted_token", nullable = false)
+	@Column(name = "encrypted_token", nullable = false, columnDefinition = "TEXT")
 	val encryptedToken: String,
 
 	@Column(name = "issued_at", nullable = false)

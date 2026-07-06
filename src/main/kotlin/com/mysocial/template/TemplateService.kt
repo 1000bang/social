@@ -1,0 +1,98 @@
+package com.mysocial.template
+
+import com.mysocial.account.AccountRepository
+import com.mysocial.dispatch.DispatchTargetRepository
+import com.mysocial.dispatch.SendLogRepository
+import com.mysocial.post.PostRepository
+import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
+
+@Service
+class TemplateService(
+	private val accountRepository: AccountRepository,
+	private val postRepository: PostRepository,
+	private val templateRepository: TemplateRepository,
+	private val dispatchTargetRepository: DispatchTargetRepository,
+	private val sendLogRepository: SendLogRepository,
+) {
+
+	@Transactional
+	fun create(accountId: Long, request: CreateTemplateRequest): Template {
+		require(request.followerMessages.size <= MAX_MESSAGES_PER_AUDIENCE) {
+			"팔로워 메시지는 최대 ${MAX_MESSAGES_PER_AUDIENCE}개까지 설정 가능합니다"
+		}
+		require(request.nonFollowerMessages.size <= MAX_MESSAGES_PER_AUDIENCE) {
+			"논팔로워 메시지는 최대 ${MAX_MESSAGES_PER_AUDIENCE}개까지 설정 가능합니다"
+		}
+
+		val account = accountRepository.findById(accountId)
+			.orElseThrow { IllegalArgumentException("계정을 찾을 수 없습니다: $accountId") }
+		val post = postRepository.findById(request.postId)
+			.orElseThrow { IllegalArgumentException("게시물을 찾을 수 없습니다: ${request.postId}") }
+
+		val template = Template(
+			account = account,
+			name = request.name,
+			post = post,
+			dispatchTime = request.dispatchTime,
+			dmKeyword = request.dmKeyword,
+		)
+
+		request.keywords.forEach { template.keywords.add(TemplateKeyword(template = template, keyword = it)) }
+		addMessages(template, AudienceType.FOLLOWER, request.followerMessages)
+		addMessages(template, AudienceType.NON_FOLLOWER, request.nonFollowerMessages)
+
+		return templateRepository.save(template)
+	}
+
+	@Transactional(readOnly = true)
+	fun findByAccount(accountId: Long): List<TemplateResponse> =
+		templateRepository.findByAccountId(accountId).map(TemplateResponse::from)
+
+	@Transactional
+	fun delete(accountId: Long, id: Long) {
+		val template = templateRepository.findById(id).orElseThrow { TemplateNotFoundException(id) }
+		if (template.account.id != accountId) throw TemplateNotFoundException(id)
+
+		dispatchTargetRepository.deleteByTemplateId(id)
+		sendLogRepository.deleteByTemplateId(id)
+		templateRepository.deleteById(id)
+	}
+
+	private fun addMessages(template: Template, audienceType: AudienceType, inputs: List<MessageInput>) {
+		inputs.forEachIndexed { index, input ->
+			when (input.messageType) {
+				MessageType.TEXT -> require(!input.textContent.isNullOrBlank()) { "텍스트 메시지는 내용이 필요합니다" }
+				MessageType.IMAGE -> require(!input.imageUrl.isNullOrBlank()) { "이미지 메시지는 이미지 URL이 필요합니다" }
+				MessageType.CAROUSEL -> require(input.carouselItems.isNotEmpty()) { "캐러셀 메시지는 최소 1개 아이템이 필요합니다" }
+			}
+
+			val message = TemplateMessage(
+				template = template,
+				audienceType = audienceType,
+				orderIndex = index + 1,
+				messageType = input.messageType,
+				textContent = input.textContent,
+				imageUrl = input.imageUrl,
+			)
+			input.carouselItems.forEachIndexed { itemIndex, item ->
+				message.carouselItems.add(
+					CarouselItem(
+						templateMessage = message,
+						orderIndex = itemIndex + 1,
+						imageUrl = item.imageUrl,
+						title = item.title,
+						subtitle = item.subtitle,
+						buttonText = item.buttonText,
+						buttonUrl = item.buttonUrl,
+					),
+				)
+			}
+			template.messages.add(message)
+		}
+	}
+
+	companion object {
+		private const val MAX_MESSAGES_PER_AUDIENCE = 3
+	}
+}

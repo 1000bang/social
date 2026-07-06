@@ -9,7 +9,6 @@ import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
-import jakarta.persistence.Lob
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
 import jakarta.persistence.UniqueConstraint
@@ -31,8 +30,7 @@ class Comment(
 	@Column(name = "author_username")
 	val authorUsername: String? = null,
 
-	@Lob
-	@Column(nullable = false)
+	@Column(nullable = false, columnDefinition = "TEXT")
 	val text: String,
 
 	@Column(name = "published_at")

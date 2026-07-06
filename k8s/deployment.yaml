@@ -60,6 +60,11 @@ spec:
                 secretKeyRef:
                   name: social-api-secret
                   key: META_APP_SECRET
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: social-api-secret
+                  key: JWT_SECRET
 ---
 apiVersion: v1
 kind: Service

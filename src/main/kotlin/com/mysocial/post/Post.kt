@@ -9,7 +9,6 @@ import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
-import jakarta.persistence.Lob
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
 import jakarta.persistence.UniqueConstraint
@@ -31,8 +30,7 @@ class Post(
 	@Column(name = "permalink")
 	val permalink: String? = null,
 
-	@Lob
-	@Column(name = "caption")
+	@Column(name = "caption", columnDefinition = "TEXT")
 	val caption: String? = null,
 
 	@Column(name = "posted_at")
