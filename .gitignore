@@ -18,6 +18,10 @@ out/
 *.md
 application-local.yml
 
+### Postman local sync (앱이 자동 생성, JSON 컬렉션이 소스) ###
+postman/postman/
+postman/.postman/
+
 ### Eclipse ###
 .apt_generated
 .classpath

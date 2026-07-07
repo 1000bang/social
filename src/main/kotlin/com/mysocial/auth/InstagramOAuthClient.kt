@@ -1,86 +1,81 @@
 package com.mysocial.auth
 
 import com.mysocial.config.MetaAppProperties
+import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
+import org.springframework.util.LinkedMultiValueMap
 import org.springframework.web.client.RestClient
+
+data class InstagramTokenResult(
+	val longLivedToken: String,
+	val instagramUserId: String,
+)
 
 @Component
 class InstagramOAuthClient(
 	private val metaAppProperties: MetaAppProperties,
 ) {
-	private val restClient = RestClient.create("https://graph.facebook.com/v21.0")
+	private val authRestClient = RestClient.create("https://api.instagram.com")
+	private val graphRestClient = RestClient.create("https://graph.instagram.com")
 
 	fun buildAuthorizationUrl(state: String): String =
-		"https://www.facebook.com/v21.0/dialog/oauth" +
+		"https://www.instagram.com/oauth/authorize" +
 			"?client_id=${metaAppProperties.appId}" +
 			"&redirect_uri=${encode(metaAppProperties.redirectUri)}" +
-			"&scope=${encode(metaAppProperties.oauthScopes)}" +
 			"&response_type=code" +
+			"&scope=${encode(metaAppProperties.oauthScopes)}" +
 			"&state=${encode(state)}"
 
-	fun exchangeCodeForLongLivedToken(code: String): String {
-		val shortLived = restClient.get()
-			.uri { builder ->
-				builder.path("/oauth/access_token")
-					.queryParam("client_id", metaAppProperties.appId)
-					.queryParam("redirect_uri", metaAppProperties.redirectUri)
-					.queryParam("client_secret", metaAppProperties.appSecret)
-					.queryParam("code", code)
-					.build()
-			}
-			.retrieve()
-			.body(TokenExchangeResponse::class.java)
-			?: error("단기 토큰 교환 응답이 비어있습니다")
-
-		val longLived = restClient.get()
-			.uri { builder ->
-				builder.path("/oauth/access_token")
-					.queryParam("grant_type", "fb_exchange_token")
-					.queryParam("client_id", metaAppProperties.appId)
-					.queryParam("client_secret", metaAppProperties.appSecret)
-					.queryParam("fb_exchange_token", shortLived.accessToken)
-					.build()
-			}
-			.retrieve()
-			.body(TokenExchangeResponse::class.java)
-			?: error("장기 토큰 교환 응답이 비어있습니다")
-
-		return longLived.accessToken
-	}
-
-	fun fetchInstagramAccount(userAccessToken: String): InstagramAccountInfo {
-		val pages = restClient.get()
-			.uri { builder -> builder.path("/me/accounts").queryParam("access_token", userAccessToken).build() }
-			.retrieve()
-			.body(FacebookPagesResponse::class.java)
-			?: error("연결된 Facebook 페이지 목록 조회에 실패했습니다")
-
-		for (page in pages.data) {
-			val pageDetail = restClient.get()
-				.uri { builder ->
-					builder.path("/${page.id}")
-						.queryParam("fields", "instagram_business_account")
-						.queryParam("access_token", userAccessToken)
-						.build()
-				}
-				.retrieve()
-				.body(PageInstagramAccount::class.java)
-
-			val instagramAccountId = pageDetail?.instagramBusinessAccount?.id ?: continue
-
-			return restClient.get()
-				.uri { builder ->
-					builder.path("/$instagramAccountId")
-						.queryParam("fields", "id,username")
-						.queryParam("access_token", userAccessToken)
-						.build()
-				}
-				.retrieve()
-				.body(InstagramAccountInfo::class.java)
-				?: error("Instagram 계정 정보 조회에 실패했습니다")
+	fun exchangeCodeForLongLivedToken(code: String): InstagramTokenResult {
+		val formData = LinkedMultiValueMap<String, String>().apply {
+			add("client_id", metaAppProperties.appId)
+			add("client_secret", metaAppProperties.appSecret)
+			add("grant_type", "authorization_code")
+			add("redirect_uri", metaAppProperties.redirectUri)
+			add("code", code)
 		}
 
-		error("연결된 Instagram 비즈니스 계정을 찾을 수 없습니다. Facebook 페이지에 Instagram 계정을 먼저 연결해주세요.")
+		val shortLived = authRestClient.post()
+			.uri("/oauth/access_token")
+			.contentType(MediaType.APPLICATION_FORM_URLENCODED)
+			.body(formData)
+			.retrieve()
+			.body(ShortLivedTokenResponse::class.java)
+			?: error("단기 토큰 교환 응답이 비어있습니다")
+
+		val longLived = graphRestClient.get()
+			.uri { builder ->
+				builder.path("/access_token")
+					.queryParam("grant_type", "ig_exchange_token")
+					.queryParam("client_secret", metaAppProperties.appSecret)
+					.queryParam("access_token", shortLived.accessToken)
+					.build()
+			}
+			.retrieve()
+			.body(LongLivedTokenResponse::class.java)
+			?: error("장기 토큰 교환 응답이 비어있습니다")
+
+		return InstagramTokenResult(
+			longLivedToken = longLived.accessToken,
+			instagramUserId = shortLived.userId.toString(),
+		)
+	}
+
+	fun fetchInstagramAccount(userAccessToken: String, fallbackUserId: String): InstagramAccountInfo {
+		val me = graphRestClient.get()
+			.uri { builder ->
+				builder.path("/me")
+					.queryParam("fields", "user_id,username")
+					.queryParam("access_token", userAccessToken)
+					.build()
+			}
+			.retrieve()
+			.body(InstagramMeResponse::class.java)
+
+		return InstagramAccountInfo(
+			id = me?.userId ?: me?.id ?: fallbackUserId,
+			username = me?.username,
+		)
 	}
 
 	private fun encode(value: String): String =

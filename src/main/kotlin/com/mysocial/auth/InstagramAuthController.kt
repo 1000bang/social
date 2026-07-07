@@ -45,8 +45,8 @@ class InstagramAuthController(
 	@Transactional
 	fun callback(@RequestParam code: String): ResponseEntity<Void> {
 		val redirectUri = runCatching {
-			val longLivedToken = instagramOAuthClient.exchangeCodeForLongLivedToken(code)
-			val igAccount = instagramOAuthClient.fetchInstagramAccount(longLivedToken)
+			val tokenResult = instagramOAuthClient.exchangeCodeForLongLivedToken(code)
+			val igAccount = instagramOAuthClient.fetchInstagramAccount(tokenResult.longLivedToken, tokenResult.instagramUserId)
 
 			val account = accountRepository.findByPlatformAndPlatformAccountId(SocialPlatform.INSTAGRAM, igAccount.id)
 				?.also {
@@ -64,7 +64,7 @@ class InstagramAuthController(
 			accessTokenRepository.save(
 				AccessToken(
 					account = account,
-					encryptedToken = longLivedToken,
+					encryptedToken = tokenResult.longLivedToken,
 					issuedAt = Instant.now(),
 					expiresAt = Instant.now().plus(LONG_LIVED_TOKEN_VALID_DAYS, ChronoUnit.DAYS),
 					refreshStatus = TokenRefreshStatus.SUCCESS,
