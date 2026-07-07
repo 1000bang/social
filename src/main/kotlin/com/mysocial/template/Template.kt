@@ -30,11 +30,14 @@ class Template(
 	@JoinColumn(name = "post_id", nullable = false)
 	val post: Post,
 
-	@Column(name = "dispatch_time", nullable = false)
-	var dispatchTime: LocalTime,
+	@Column(name = "dispatch_time")
+	var dispatchTime: LocalTime? = null,
 
 	@Column(name = "dm_keyword")
 	var dmKeyword: String? = null,
+
+	@Column(name = "comment_reply_text", columnDefinition = "TEXT")
+	var commentReplyText: String? = null,
 ) : BaseTimeEntity() {
 
 	@Id
@@ -49,4 +52,11 @@ class Template(
 
 	fun matchesKeyword(text: String): Boolean =
 		keywords.isEmpty() || keywords.any { text.contains(it.keyword, ignoreCase = true) }
+
+	fun resolvedCommentReplyText(): String =
+		commentReplyText ?: DEFAULT_COMMENT_REPLY_TEXT
+
+	companion object {
+		private const val DEFAULT_COMMENT_REPLY_TEXT = "메시지 보냈어요! DM이 안보이면 말씀주세요!"
+	}
 }

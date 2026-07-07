@@ -6,9 +6,10 @@ import java.time.LocalTime
 data class CreateTemplateRequest(
 	val name: String,
 	val postId: Long,
-	val dispatchTime: LocalTime,
+	val dispatchTime: LocalTime? = null,
 	val keywords: List<String> = emptyList(),
 	val dmKeyword: String? = null,
+	val commentReplyText: String? = null,
 	val followerMessages: List<MessageInput> = emptyList(),
 	val nonFollowerMessages: List<MessageInput> = emptyList(),
 )
@@ -32,9 +33,10 @@ data class TemplateResponse(
 	val id: Long,
 	val name: String,
 	val postId: Long,
-	val dispatchTime: LocalTime,
+	val dispatchTime: LocalTime?,
 	val keywords: List<String>,
 	val dmKeyword: String?,
+	val commentReplyText: String?,
 	val createdAt: Instant,
 ) {
 	companion object {
@@ -45,6 +47,7 @@ data class TemplateResponse(
 			dispatchTime = template.dispatchTime,
 			keywords = template.keywords.map { it.keyword },
 			dmKeyword = template.dmKeyword,
+			commentReplyText = template.commentReplyText,
 			createdAt = template.createdAt,
 		)
 	}

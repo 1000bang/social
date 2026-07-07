@@ -36,6 +36,7 @@ class TemplateService(
 			post = post,
 			dispatchTime = request.dispatchTime,
 			dmKeyword = request.dmKeyword,
+			commentReplyText = request.commentReplyText,
 		)
 
 		request.keywords.forEach { template.keywords.add(TemplateKeyword(template = template, keyword = it)) }
