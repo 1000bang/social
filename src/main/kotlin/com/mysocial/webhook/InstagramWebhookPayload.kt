@@ -51,4 +51,10 @@ data class WebhookMessagingEvent(
 data class WebhookMessageContent(
 	val mid: String? = null,
 	val text: String? = null,
+	@JsonProperty("quick_reply") val quickReply: WebhookQuickReply? = null,
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class WebhookQuickReply(
+	val payload: String? = null,
 )

@@ -7,15 +7,15 @@ import org.springframework.stereotype.Service
 class DispatchTargetEnqueuer(
 	private val dispatchTargetRepository: DispatchTargetRepository,
 ) {
-	fun enqueue(template: Template, triggerType: TriggerType, platformTriggerId: String, recipientPlatformUserId: String) {
+	fun enqueue(template: Template, triggerType: TriggerType, platformTriggerId: String, recipientPlatformUserId: String): DispatchTarget? {
 		val alreadyQueued = dispatchTargetRepository.existsByTemplateIdAndTriggerTypeAndPlatformTriggerId(
 			template.id,
 			triggerType,
 			platformTriggerId,
 		)
-		if (alreadyQueued) return
+		if (alreadyQueued) return null
 
-		dispatchTargetRepository.save(
+		return dispatchTargetRepository.save(
 			DispatchTarget(
 				template = template,
 				triggerType = triggerType,

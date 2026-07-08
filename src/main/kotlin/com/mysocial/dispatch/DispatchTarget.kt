@@ -50,6 +50,10 @@ class DispatchTarget(
 	var processedAt: Instant? = null
 		protected set
 
+	fun markAwaitingFollowCheck() {
+		status = DispatchStatus.AWAITING_FOLLOW_CHECK
+	}
+
 	fun markSent(at: Instant) {
 		status = DispatchStatus.SENT
 		processedAt = at

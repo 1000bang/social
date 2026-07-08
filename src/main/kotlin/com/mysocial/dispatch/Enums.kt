@@ -7,6 +7,7 @@ enum class TriggerType {
 
 enum class DispatchStatus {
 	PENDING,
+	AWAITING_FOLLOW_CHECK,
 	SENT,
 	FAILED,
 }

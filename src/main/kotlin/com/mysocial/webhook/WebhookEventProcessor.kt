@@ -7,7 +7,9 @@ import com.mysocial.comment.Comment
 import com.mysocial.comment.CommentRepository
 import com.mysocial.common.SocialPlatform
 import com.mysocial.dispatch.CommentTemplateMatcher
+import com.mysocial.dispatch.DispatchExecutor
 import com.mysocial.dispatch.DmKeywordMatcher
+import com.mysocial.dispatch.FOLLOW_CHECK_PAYLOAD_PREFIX
 import com.mysocial.message.DirectMessage
 import com.mysocial.message.DirectMessageRepository
 import com.mysocial.message.DmThread
@@ -32,6 +34,7 @@ class WebhookEventProcessor(
 	private val directMessageRepository: DirectMessageRepository,
 	private val commentTemplateMatcher: CommentTemplateMatcher,
 	private val dmKeywordMatcher: DmKeywordMatcher,
+	private val dispatchExecutor: DispatchExecutor,
 ) {
 	private val log = LoggerFactory.getLogger(javaClass)
 
@@ -102,6 +105,15 @@ class WebhookEventProcessor(
 				sentAt = Instant.now(),
 			),
 		)
+
+		val quickReplyPayload = event.message.quickReply?.payload
+		if (quickReplyPayload != null && quickReplyPayload.startsWith(FOLLOW_CHECK_PAYLOAD_PREFIX)) {
+			val dispatchTargetId = quickReplyPayload.removePrefix(FOLLOW_CHECK_PAYLOAD_PREFIX).toLongOrNull()
+			if (dispatchTargetId != null) {
+				dispatchExecutor.handleFollowCheckClick(dispatchTargetId, senderId)
+			}
+			return
+		}
 
 		dmKeywordMatcher.match(account.id, mid, senderId, text)
 	}

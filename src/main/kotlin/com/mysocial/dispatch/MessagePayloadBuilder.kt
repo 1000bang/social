@@ -1,0 +1,54 @@
+package com.mysocial.dispatch
+
+import com.mysocial.template.MessageType
+import com.mysocial.template.TemplateMessage
+
+const val FOLLOW_CHECK_PAYLOAD_PREFIX = "FOLLOW_CHECK:"
+private const val FOLLOW_BUTTON_TITLE = "팔로우했어요"
+
+object MessagePayloadBuilder {
+
+	fun promptWithFollowButton(text: String, dispatchTargetId: Long): Map<String, Any?> = mapOf(
+		"text" to text,
+		"quick_replies" to listOf(
+			mapOf(
+				"content_type" to "text",
+				"title" to FOLLOW_BUTTON_TITLE,
+				"payload" to "$FOLLOW_CHECK_PAYLOAD_PREFIX$dispatchTargetId",
+			),
+		),
+	)
+
+	fun fromTemplateMessage(message: TemplateMessage): Map<String, Any?> = when (message.messageType) {
+		MessageType.TEXT -> mapOf("text" to message.textContent)
+
+		MessageType.IMAGE -> mapOf(
+			"attachment" to mapOf(
+				"type" to "image",
+				"payload" to mapOf("url" to message.imageUrl),
+			),
+		)
+
+		MessageType.CAROUSEL -> mapOf(
+			"attachment" to mapOf(
+				"type" to "template",
+				"payload" to mapOf(
+					"template_type" to "generic",
+					"elements" to message.carouselItems.sortedBy { it.orderIndex }.map { item ->
+						mapOf(
+							"title" to (item.title ?: ""),
+							"image_url" to item.imageUrl,
+							"subtitle" to item.subtitle,
+							"buttons" to buttonsFor(item.buttonText, item.buttonUrl),
+						)
+					},
+				),
+			),
+		)
+	}
+
+	private fun buttonsFor(buttonText: String?, buttonUrl: String?): List<Map<String, Any?>>? {
+		if (buttonText == null || buttonUrl == null) return null
+		return listOf(mapOf("type" to "web_url", "url" to buttonUrl, "title" to buttonText))
+	}
+}
