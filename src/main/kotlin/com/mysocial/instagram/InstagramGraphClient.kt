@@ -18,4 +18,27 @@ class InstagramGraphClient {
 			.retrieve()
 			.body(Map::class.java)
 			?: emptyMap<String, Any?>()
+
+	fun getSubscribedApps(accessToken: String, igUserId: String): Map<*, *> =
+		restClient.get()
+			.uri { builder ->
+				builder.path("/$igUserId/subscribed_apps")
+					.queryParam("access_token", accessToken)
+					.build()
+			}
+			.retrieve()
+			.body(Map::class.java)
+			?: emptyMap<String, Any?>()
+
+	fun subscribeApp(accessToken: String, igUserId: String, subscribedFields: String): Map<*, *> =
+		restClient.post()
+			.uri { builder ->
+				builder.path("/$igUserId/subscribed_apps")
+					.queryParam("subscribed_fields", subscribedFields)
+					.queryParam("access_token", accessToken)
+					.build()
+			}
+			.retrieve()
+			.body(Map::class.java)
+			?: emptyMap<String, Any?>()
 }
