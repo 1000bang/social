@@ -17,8 +17,13 @@ class JwtAuthenticationFilter(
 	private val objectMapper: ObjectMapper,
 ) : OncePerRequestFilter() {
 
-	override fun shouldNotFilter(request: HttpServletRequest): Boolean =
-		!request.requestURI.startsWith("/api/") || request.requestURI.startsWith("/api/auth/")
+	override fun shouldNotFilter(request: HttpServletRequest): Boolean {
+		val path = request.requestURI
+		if (!path.startsWith("/api/")) return true
+		if (path.startsWith("/api/auth/")) return true
+		if (path.startsWith("/api/media/") && request.method == "GET") return true
+		return false
+	}
 
 	override fun doFilterInternal(request: HttpServletRequest, response: HttpServletResponse, filterChain: FilterChain) {
 		val header = request.getHeader("Authorization")

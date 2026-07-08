@@ -29,6 +29,9 @@ class SendLog(
 	@Column(name = "recipient_platform_user_id", nullable = false)
 	val recipientPlatformUserId: String,
 
+	@Column(name = "recipient_username")
+	val recipientUsername: String? = null,
+
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false)
 	val result: SendResult,

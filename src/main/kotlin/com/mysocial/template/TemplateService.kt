@@ -1,9 +1,12 @@
 package com.mysocial.template
 
 import com.mysocial.account.AccountRepository
+import com.mysocial.common.PageResponse
 import com.mysocial.dispatch.DispatchTargetRepository
 import com.mysocial.dispatch.SendLogRepository
 import com.mysocial.post.PostRepository
+import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -37,6 +40,7 @@ class TemplateService(
 			dispatchTime = request.dispatchTime,
 			dmKeyword = request.dmKeyword,
 			commentReplyText = request.commentReplyText,
+			nonKeywordCommentReplyText = request.nonKeywordCommentReplyText,
 		)
 
 		request.keywords.forEach { template.keywords.add(TemplateKeyword(template = template, keyword = it)) }
@@ -47,8 +51,10 @@ class TemplateService(
 	}
 
 	@Transactional(readOnly = true)
-	fun findByAccount(accountId: Long): List<TemplateResponse> =
-		templateRepository.findByAccountId(accountId).map(TemplateResponse::from)
+	fun findByAccount(accountId: Long, page: Int, size: Int): PageResponse<TemplateResponse> {
+		val pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"))
+		return PageResponse.from(templateRepository.findByAccountId(accountId, pageable), TemplateResponse::from)
+	}
 
 	@Transactional
 	fun delete(accountId: Long, id: Long) {

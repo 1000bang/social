@@ -10,6 +10,7 @@ data class CreateTemplateRequest(
 	val keywords: List<String> = emptyList(),
 	val dmKeyword: String? = null,
 	val commentReplyText: String? = null,
+	val nonKeywordCommentReplyText: String? = null,
 	val followerMessages: List<MessageInput> = emptyList(),
 	val nonFollowerMessages: List<MessageInput> = emptyList(),
 )
@@ -37,6 +38,7 @@ data class TemplateResponse(
 	val keywords: List<String>,
 	val dmKeyword: String?,
 	val commentReplyText: String?,
+	val nonKeywordCommentReplyText: String?,
 	val createdAt: Instant,
 ) {
 	companion object {
@@ -48,6 +50,7 @@ data class TemplateResponse(
 			keywords = template.keywords.map { it.keyword },
 			dmKeyword = template.dmKeyword,
 			commentReplyText = template.commentReplyText,
+			nonKeywordCommentReplyText = template.nonKeywordCommentReplyText,
 			createdAt = template.createdAt,
 		)
 	}

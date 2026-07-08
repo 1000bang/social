@@ -1,4 +1,14 @@
-import type { CreateTemplateRequest, SendLogResponse, TemplateResponse } from "./types";
+import type {
+	ChartBucket,
+	ChartGranularity,
+	CreateTemplateRequest,
+	MediaUploadResponse,
+	PageResponse,
+	PostResponse,
+	SendLogResponse,
+	SendLogSummaryResponse,
+	TemplateResponse,
+} from "./types";
 
 const TOKEN_KEY = "mysocial_jwt";
 
@@ -17,7 +27,8 @@ export function clearToken(): void {
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 	const token = getToken();
 	const headers = new Headers(options.headers);
-	headers.set("Content-Type", "application/json");
+	const isFormData = options.body instanceof FormData;
+	if (!isFormData) headers.set("Content-Type", "application/json");
 	if (token) headers.set("Authorization", `Bearer ${token}`);
 
 	const res = await fetch(path, { ...options, headers });
@@ -39,9 +50,20 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
 export const api = {
 	getLoginUrl: () => request<{ url: string }>("/api/auth/instagram/login-url"),
-	listTemplates: () => request<TemplateResponse[]>("/api/templates"),
+	listTemplates: (page = 0, size = 10) =>
+		request<PageResponse<TemplateResponse>>(`/api/templates?page=${page}&size=${size}`),
 	createTemplate: (body: CreateTemplateRequest) =>
 		request<TemplateResponse>("/api/templates", { method: "POST", body: JSON.stringify(body) }),
 	deleteTemplate: (id: number) => request<void>(`/api/templates/${id}`, { method: "DELETE" }),
-	listSendLogs: () => request<SendLogResponse[]>("/api/send-logs"),
+	listSendLogs: (page = 0, size = 10) =>
+		request<PageResponse<SendLogResponse>>(`/api/send-logs?page=${page}&size=${size}`),
+	getSendLogSummary: () => request<SendLogSummaryResponse>("/api/send-logs/summary"),
+	getSendLogChart: (granularity: ChartGranularity) =>
+		request<ChartBucket[]>(`/api/send-logs/chart?granularity=${granularity}`),
+	listPosts: () => request<PostResponse[]>("/api/posts"),
+	uploadMedia: (file: File) => {
+		const formData = new FormData();
+		formData.append("file", file);
+		return request<MediaUploadResponse>("/api/media", { method: "POST", body: formData });
+	},
 };

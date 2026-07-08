@@ -11,7 +11,7 @@ class InstagramGraphClient {
 		restClient.get()
 			.uri { builder ->
 				builder.path("/$targetUserId")
-					.queryParam("fields", "is_user_follow_business,is_business_follow_user")
+					.queryParam("fields", "username,is_user_follow_business,is_business_follow_user")
 					.queryParam("access_token", accessToken)
 					.build()
 			}
@@ -41,4 +41,17 @@ class InstagramGraphClient {
 			.retrieve()
 			.body(Map::class.java)
 			?: emptyMap<String, Any?>()
+
+	fun listMedia(accessToken: String): InstagramMediaListResponse =
+		restClient.get()
+			.uri { builder ->
+				builder.path("/me/media")
+					.queryParam("fields", "id,caption,media_type,media_url,thumbnail_url,permalink,timestamp")
+					.queryParam("limit", "5")
+					.queryParam("access_token", accessToken)
+					.build()
+			}
+			.retrieve()
+			.body(InstagramMediaListResponse::class.java)
+			?: InstagramMediaListResponse()
 }

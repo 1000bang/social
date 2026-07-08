@@ -10,13 +10,15 @@ class CommentTemplateMatcher(
 	private val dispatchExecutor: DispatchExecutor,
 ) {
 	fun match(postId: Long, commentPlatformId: String, commenterPlatformUserId: String, commentText: String) {
-		templateRepository.findByPostId(postId)
-			.filter { it.matchesKeyword(commentText) }
-			.forEach { template ->
+		templateRepository.findByPostId(postId).forEach { template ->
+			if (template.matchesKeyword(commentText)) {
 				val target = dispatchTargetEnqueuer.enqueue(template, TriggerType.COMMENT, commentPlatformId, commenterPlatformUserId)
 				if (target != null && template.dispatchTime == null) {
 					dispatchExecutor.sendInitialPrompt(target.id)
 				}
+			} else {
+				dispatchExecutor.replyToNonMatchingComment(template.id, commentPlatformId)
 			}
+		}
 	}
 }

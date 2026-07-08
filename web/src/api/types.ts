@@ -1,6 +1,15 @@
+export interface PageResponse<T> {
+	content: T[];
+	page: number;
+	size: number;
+	totalElements: number;
+	totalPages: number;
+}
+
 export type MessageType = "TEXT" | "IMAGE" | "CAROUSEL";
 export type AudienceType = "FOLLOWER" | "NON_FOLLOWER";
 export type SendResult = "SUCCESS" | "FAILED";
+export type ChartGranularity = "HOUR" | "DAY" | "MONTH";
 
 export interface CarouselItemInput {
 	imageUrl: string;
@@ -24,6 +33,7 @@ export interface CreateTemplateRequest {
 	keywords?: string[];
 	dmKeyword?: string;
 	commentReplyText?: string;
+	nonKeywordCommentReplyText?: string;
 	followerMessages?: MessageInput[];
 	nonFollowerMessages?: MessageInput[];
 }
@@ -36,6 +46,7 @@ export interface TemplateResponse {
 	keywords: string[];
 	dmKeyword: string | null;
 	commentReplyText: string | null;
+	nonKeywordCommentReplyText: string | null;
 	createdAt: string;
 }
 
@@ -45,7 +56,33 @@ export interface SendLogResponse {
 	templateName: string;
 	audienceType: AudienceType | null;
 	recipientPlatformUserId: string;
+	recipientUsername: string | null;
 	result: SendResult;
 	failureReason: string | null;
 	createdAt: string;
+}
+
+export interface SendLogSummaryResponse {
+	contactedUsersThisMonth: number;
+	messagesSentThisMonth: number;
+}
+
+export interface ChartBucket {
+	bucket: string;
+	count: number;
+}
+
+export interface PostResponse {
+	id: number;
+	platformPostId: string;
+	caption: string | null;
+	mediaType: string | null;
+	thumbnailUrl: string | null;
+	permalink: string | null;
+	timestamp: string | null;
+}
+
+export interface MediaUploadResponse {
+	id: number;
+	url: string;
 }

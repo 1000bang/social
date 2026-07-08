@@ -38,6 +38,9 @@ class Template(
 
 	@Column(name = "comment_reply_text", columnDefinition = "TEXT")
 	var commentReplyText: String? = null,
+
+	@Column(name = "non_keyword_comment_reply_text", columnDefinition = "TEXT")
+	var nonKeywordCommentReplyText: String? = null,
 ) : BaseTimeEntity() {
 
 	@Id
@@ -56,7 +59,11 @@ class Template(
 	fun resolvedCommentReplyText(): String =
 		commentReplyText ?: DEFAULT_COMMENT_REPLY_TEXT
 
+	fun resolvedNonKeywordCommentReplyText(): String =
+		nonKeywordCommentReplyText ?: DEFAULT_NON_KEYWORD_COMMENT_REPLY_TEXT
+
 	companion object {
-		private const val DEFAULT_COMMENT_REPLY_TEXT = "메시지 보냈어요! DM이 안보이면 말씀주세요!"
+		const val DEFAULT_COMMENT_REPLY_TEXT = "메시지 보냈어요! DM이 안보이면 말씀주세요!"
+		const val DEFAULT_NON_KEYWORD_COMMENT_REPLY_TEXT = "댓글 남겨주셔서 감사합니다!"
 	}
 }

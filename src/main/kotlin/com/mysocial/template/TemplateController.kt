@@ -1,6 +1,7 @@
 package com.mysocial.template
 
 import com.mysocial.auth.CURRENT_ACCOUNT_ID_ATTRIBUTE
+import com.mysocial.common.PageResponse
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestAttribute
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
@@ -28,8 +30,11 @@ class TemplateController(
 	}
 
 	@GetMapping
-	fun list(@RequestAttribute(CURRENT_ACCOUNT_ID_ATTRIBUTE) accountId: Long): List<TemplateResponse> =
-		templateService.findByAccount(accountId)
+	fun list(
+		@RequestAttribute(CURRENT_ACCOUNT_ID_ATTRIBUTE) accountId: Long,
+		@RequestParam(defaultValue = "0") page: Int,
+		@RequestParam(defaultValue = "10") size: Int,
+	): PageResponse<TemplateResponse> = templateService.findByAccount(accountId, page, size)
 
 	@DeleteMapping("/{id}")
 	fun delete(
