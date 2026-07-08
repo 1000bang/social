@@ -88,6 +88,16 @@ class WebhookEventProcessor(
 
 	private fun handleMessage(account: Account, event: WebhookMessagingEvent) {
 		val senderId = event.sender?.id ?: return
+
+		val postbackPayload = event.postback?.payload
+		if (postbackPayload != null && postbackPayload.startsWith(FOLLOW_CHECK_PAYLOAD_PREFIX)) {
+			val dispatchTargetId = postbackPayload.removePrefix(FOLLOW_CHECK_PAYLOAD_PREFIX).toLongOrNull()
+			if (dispatchTargetId != null) {
+				dispatchExecutor.handleFollowCheckClick(dispatchTargetId, senderId)
+			}
+			return
+		}
+
 		val mid = event.message?.mid ?: return
 		val text = event.message.text ?: return
 
@@ -105,15 +115,6 @@ class WebhookEventProcessor(
 				sentAt = Instant.now(),
 			),
 		)
-
-		val quickReplyPayload = event.message.quickReply?.payload
-		if (quickReplyPayload != null && quickReplyPayload.startsWith(FOLLOW_CHECK_PAYLOAD_PREFIX)) {
-			val dispatchTargetId = quickReplyPayload.removePrefix(FOLLOW_CHECK_PAYLOAD_PREFIX).toLongOrNull()
-			if (dispatchTargetId != null) {
-				dispatchExecutor.handleFollowCheckClick(dispatchTargetId, senderId)
-			}
-			return
-		}
 
 		dmKeywordMatcher.match(account.id, mid, senderId, text)
 	}

@@ -9,12 +9,18 @@ private const val FOLLOW_BUTTON_TITLE = "팔로우했어요"
 object MessagePayloadBuilder {
 
 	fun promptWithFollowButton(text: String, dispatchTargetId: Long): Map<String, Any?> = mapOf(
-		"text" to text,
-		"quick_replies" to listOf(
-			mapOf(
-				"content_type" to "text",
-				"title" to FOLLOW_BUTTON_TITLE,
-				"payload" to "$FOLLOW_CHECK_PAYLOAD_PREFIX$dispatchTargetId",
+		"attachment" to mapOf(
+			"type" to "template",
+			"payload" to mapOf(
+				"template_type" to "button",
+				"text" to text,
+				"buttons" to listOf(
+					mapOf(
+						"type" to "postback",
+						"title" to FOLLOW_BUTTON_TITLE,
+						"payload" to "$FOLLOW_CHECK_PAYLOAD_PREFIX$dispatchTargetId",
+					),
+				),
 			),
 		),
 	)

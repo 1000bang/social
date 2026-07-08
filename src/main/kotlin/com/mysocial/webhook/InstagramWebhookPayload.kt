@@ -45,16 +45,17 @@ data class WebhookMedia(
 data class WebhookMessagingEvent(
 	val sender: WebhookUser? = null,
 	val message: WebhookMessageContent? = null,
+	val postback: WebhookPostback? = null,
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class WebhookMessageContent(
 	val mid: String? = null,
 	val text: String? = null,
-	@JsonProperty("quick_reply") val quickReply: WebhookQuickReply? = null,
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-data class WebhookQuickReply(
+data class WebhookPostback(
 	val payload: String? = null,
+	val title: String? = null,
 )
