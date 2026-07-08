@@ -6,3 +6,5 @@ out/
 .git/
 .claude/
 k8s/
+web/node_modules/
+web/dist/

@@ -28,7 +28,7 @@ app:
     app-secret: ${META_APP_SECRET:}
     redirect-uri: ${META_REDIRECT_URI:https://social.1000bang.info/api/auth/instagram/callback}
     oauth-scopes: ${META_OAUTH_SCOPES:instagram_business_basic,instagram_business_manage_comments,instagram_business_manage_messages}
-    deep-link-scheme: ${APP_DEEP_LINK_SCHEME:mysocial://auth}
+    web-auth-callback-url: ${WEB_AUTH_CALLBACK_URL:https://social.1000bang.info/auth/callback}
   auth:
     # 실제 값은 application-local.yml(gitignore 처리됨)에서 주입. 운영에서는 반드시 JWT_SECRET 환경변수로 재설정할 것
     jwt-secret: ${JWT_SECRET:ItPOW+F++JPIqidD9aUYtAaoaLmoy7AwLZMZVTxSIXci5WtTiiR67rpBntnwnCEe}

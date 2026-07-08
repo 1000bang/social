@@ -8,5 +8,5 @@ data class MetaAppProperties(
 	val appSecret: String,
 	val redirectUri: String,
 	val oauthScopes: String,
-	val deepLinkScheme: String,
+	val webAuthCallbackUrl: String,
 )

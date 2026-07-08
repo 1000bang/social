@@ -72,10 +72,10 @@ class InstagramAuthController(
 			)
 
 			val jwt = jwtService.issueToken(account.id)
-			"${metaAppProperties.deepLinkScheme}?token=${encode(jwt)}"
+			"${metaAppProperties.webAuthCallbackUrl}?token=${encode(jwt)}"
 		}.getOrElse { ex ->
 			log.warn("Instagram OAuth 콜백 처리 실패", ex)
-			"${metaAppProperties.deepLinkScheme}?error=${encode(ex.message ?: "unknown_error")}"
+			"${metaAppProperties.webAuthCallbackUrl}?error=${encode(ex.message ?: "unknown_error")}"
 		}
 
 		return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(redirectUri)).build()
