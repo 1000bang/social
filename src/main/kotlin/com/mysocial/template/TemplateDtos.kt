@@ -55,3 +55,54 @@ data class TemplateResponse(
 		)
 	}
 }
+
+data class TemplateDetailResponse(
+	val id: Long,
+	val name: String,
+	val postId: Long,
+	val dispatchTime: LocalTime?,
+	val keywords: List<String>,
+	val dmKeyword: String?,
+	val commentReplyText: String?,
+	val nonKeywordCommentReplyText: String?,
+	val followerMessages: List<MessageInput>,
+	val nonFollowerMessages: List<MessageInput>,
+	val createdAt: Instant,
+) {
+	companion object {
+		fun from(template: Template): TemplateDetailResponse = TemplateDetailResponse(
+			id = template.id,
+			name = template.name,
+			postId = template.post.id,
+			dispatchTime = template.dispatchTime,
+			keywords = template.keywords.map { it.keyword },
+			dmKeyword = template.dmKeyword,
+			commentReplyText = template.commentReplyText,
+			nonKeywordCommentReplyText = template.nonKeywordCommentReplyText,
+			followerMessages = toMessageInputs(template, AudienceType.FOLLOWER),
+			nonFollowerMessages = toMessageInputs(template, AudienceType.NON_FOLLOWER),
+			createdAt = template.createdAt,
+		)
+
+		private fun toMessageInputs(template: Template, audienceType: AudienceType): List<MessageInput> =
+			template.messages
+				.filter { it.audienceType == audienceType }
+				.sortedBy { it.orderIndex }
+				.map { message ->
+					MessageInput(
+						messageType = message.messageType,
+						textContent = message.textContent,
+						imageUrl = message.imageUrl,
+						carouselItems = message.carouselItems.sortedBy { it.orderIndex }.map { item ->
+							CarouselItemInput(
+								imageUrl = item.imageUrl,
+								title = item.title,
+								subtitle = item.subtitle,
+								buttonText = item.buttonText,
+								buttonUrl = item.buttonUrl,
+							)
+						},
+					)
+				}
+	}
+}

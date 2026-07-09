@@ -27,6 +27,7 @@ class TemplateService(
 		require(request.nonFollowerMessages.size <= MAX_MESSAGES_PER_AUDIENCE) {
 			"논팔로워 메시지는 최대 ${MAX_MESSAGES_PER_AUDIENCE}개까지 설정 가능합니다"
 		}
+		ensurePostNotTaken(request.postId)
 
 		val account = accountRepository.findById(accountId)
 			.orElseThrow { IllegalArgumentException("계정을 찾을 수 없습니다: $accountId") }
@@ -56,6 +57,46 @@ class TemplateService(
 		return PageResponse.from(templateRepository.findByAccountId(accountId, pageable), TemplateResponse::from)
 	}
 
+	@Transactional(readOnly = true)
+	fun findDetail(accountId: Long, id: Long): TemplateDetailResponse {
+		val template = templateRepository.findById(id).orElseThrow { TemplateNotFoundException(id) }
+		if (template.account.id != accountId) throw TemplateNotFoundException(id)
+		return TemplateDetailResponse.from(template)
+	}
+
+	@Transactional
+	fun update(accountId: Long, id: Long, request: CreateTemplateRequest): Template {
+		require(request.followerMessages.size <= MAX_MESSAGES_PER_AUDIENCE) {
+			"팔로워 메시지는 최대 ${MAX_MESSAGES_PER_AUDIENCE}개까지 설정 가능합니다"
+		}
+		require(request.nonFollowerMessages.size <= MAX_MESSAGES_PER_AUDIENCE) {
+			"논팔로워 메시지는 최대 ${MAX_MESSAGES_PER_AUDIENCE}개까지 설정 가능합니다"
+		}
+
+		val template = templateRepository.findById(id).orElseThrow { TemplateNotFoundException(id) }
+		if (template.account.id != accountId) throw TemplateNotFoundException(id)
+		ensurePostNotTaken(request.postId, excludeTemplateId = id)
+
+		val post = postRepository.findById(request.postId)
+			.orElseThrow { IllegalArgumentException("게시물을 찾을 수 없습니다: ${request.postId}") }
+
+		template.name = request.name
+		template.post = post
+		template.dispatchTime = request.dispatchTime
+		template.dmKeyword = request.dmKeyword
+		template.commentReplyText = request.commentReplyText
+		template.nonKeywordCommentReplyText = request.nonKeywordCommentReplyText
+
+		template.keywords.clear()
+		request.keywords.forEach { template.keywords.add(TemplateKeyword(template = template, keyword = it)) }
+
+		template.messages.clear()
+		addMessages(template, AudienceType.FOLLOWER, request.followerMessages)
+		addMessages(template, AudienceType.NON_FOLLOWER, request.nonFollowerMessages)
+
+		return templateRepository.save(template)
+	}
+
 	@Transactional
 	fun delete(accountId: Long, id: Long) {
 		val template = templateRepository.findById(id).orElseThrow { TemplateNotFoundException(id) }
@@ -64,6 +105,15 @@ class TemplateService(
 		dispatchTargetRepository.deleteByTemplateId(id)
 		sendLogRepository.deleteByTemplateId(id)
 		templateRepository.deleteById(id)
+	}
+
+	private fun ensurePostNotTaken(postId: Long, excludeTemplateId: Long? = null) {
+		val taken = if (excludeTemplateId != null) {
+			templateRepository.existsByPostIdAndIdNot(postId, excludeTemplateId)
+		} else {
+			templateRepository.existsByPostId(postId)
+		}
+		require(!taken) { "이미 다른 템플릿에 연결된 게시물입니다. 게시물당 하나의 템플릿만 등록할 수 있습니다" }
 	}
 
 	private fun addMessages(template: Template, audienceType: AudienceType, inputs: List<MessageInput>) {

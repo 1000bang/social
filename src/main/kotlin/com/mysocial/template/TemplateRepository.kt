@@ -10,4 +10,6 @@ interface TemplateRepository : JpaRepository<Template, Long> {
 	fun findByPostId(postId: Long): List<Template>
 	fun findByAccountIdAndDmKeywordIsNotNull(accountId: Long): List<Template>
 	fun findByDispatchTime(dispatchTime: LocalTime): List<Template>
+	fun existsByPostId(postId: Long): Boolean
+	fun existsByPostIdAndIdNot(postId: Long, id: Long): Boolean
 }

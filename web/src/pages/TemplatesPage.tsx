@@ -1,7 +1,15 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { api } from "../api/client";
 import { Pagination } from "../components/Pagination";
-import type { CreateTemplateRequest, MessageInput, MessageType, PostResponse, TemplateResponse } from "../api/types";
+import type {
+	AccountSettingsResponse,
+	CreateTemplateRequest,
+	MessageInput,
+	MessageType,
+	PostResponse,
+	TemplateDetailResponse,
+	TemplateResponse,
+} from "../api/types";
 
 const MAX_MESSAGES = 3;
 const DEFAULT_NON_FOLLOWER_TEXT = "팔로우가 확인되지 않았어요! 팔로우 후 다시 요청 부탁드립니다.";
@@ -10,21 +18,21 @@ function emptyMessage(): MessageInput {
 	return { messageType: "TEXT", textContent: "" };
 }
 
-function defaultNonFollowerMessage(): MessageInput {
-	return { messageType: "TEXT", textContent: DEFAULT_NON_FOLLOWER_TEXT };
-}
-
 export function TemplatesPage() {
 	const [templates, setTemplates] = useState<TemplateResponse[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 	const [showForm, setShowForm] = useState(false);
+	const [editingId, setEditingId] = useState<number | null>(null);
 	const [page, setPage] = useState(0);
+	const [pageSize, setPageSize] = useState(10);
 	const [totalPages, setTotalPages] = useState(0);
 
 	const [posts, setPosts] = useState<PostResponse[]>([]);
 	const [postsLoading, setPostsLoading] = useState(false);
 	const [postsError, setPostsError] = useState<string | null>(null);
+
+	const [settings, setSettings] = useState<AccountSettingsResponse | null>(null);
 
 	const [name, setName] = useState("");
 	const [postId, setPostId] = useState<number | null>(null);
@@ -36,10 +44,18 @@ export function TemplatesPage() {
 	const [commentReplyText, setCommentReplyText] = useState("");
 	const [nonKeywordCommentReplyText, setNonKeywordCommentReplyText] = useState("");
 	const [followerMessages, setFollowerMessages] = useState<MessageInput[]>([emptyMessage()]);
-	const [nonFollowerMessages, setNonFollowerMessages] = useState<MessageInput[]>([defaultNonFollowerMessage()]);
+	const [nonFollowerMessages, setNonFollowerMessages] = useState<MessageInput[]>([
+		{ messageType: "TEXT", textContent: DEFAULT_NON_FOLLOWER_TEXT },
+	]);
 	const [submitting, setSubmitting] = useState(false);
 	const [formError, setFormError] = useState<string | null>(null);
 	const [uploadingIndex, setUploadingIndex] = useState<string | null>(null);
+
+	const applyDefaultTexts = (s: AccountSettingsResponse | null) => {
+		setCommentReplyText(s?.commentReplyText ?? "");
+		setNonKeywordCommentReplyText(s?.nonKeywordCommentReplyText ?? "");
+		setNonFollowerMessages([{ messageType: "TEXT", textContent: s?.nonFollowerMessageText ?? DEFAULT_NON_FOLLOWER_TEXT }]);
+	};
 
 	const loadTemplates = (targetPage: number) => {
 		setLoading(true);
@@ -48,6 +64,7 @@ export function TemplatesPage() {
 			.then((res) => {
 				setTemplates(res.content);
 				setTotalPages(res.totalPages);
+				setPageSize(res.size);
 			})
 			.catch((err) => setError(err instanceof Error ? err.message : "템플릿을 불러오지 못했습니다"))
 			.finally(() => setLoading(false));
@@ -57,8 +74,17 @@ export function TemplatesPage() {
 		loadTemplates(page);
 	}, [page]);
 
-	const openForm = () => {
-		setShowForm(true);
+	useEffect(() => {
+		api
+			.getSettings()
+			.then((s) => {
+				setSettings(s);
+				applyDefaultTexts(s);
+			})
+			.catch(() => setSettings(null));
+	}, []);
+
+	const ensurePostsLoaded = () => {
 		if (posts.length === 0 && !postsLoading) {
 			setPostsLoading(true);
 			setPostsError(null);
@@ -67,6 +93,49 @@ export function TemplatesPage() {
 				.then(setPosts)
 				.catch((err) => setPostsError(err instanceof Error ? err.message : "게시물 목록을 불러오지 못했습니다"))
 				.finally(() => setPostsLoading(false));
+		}
+	};
+
+	const closeForm = () => {
+		setShowForm(false);
+		setEditingId(null);
+	};
+
+	const openCreateForm = () => {
+		setEditingId(null);
+		resetForm();
+		setShowForm(true);
+		ensurePostsLoaded();
+	};
+
+	const applyDetail = (detail: TemplateDetailResponse) => {
+		setName(detail.name);
+		setPostId(detail.postId);
+		setUseSchedule(detail.dispatchTime != null);
+		setDispatchTime(detail.dispatchTime ? detail.dispatchTime.slice(0, 5) : "");
+		setKeywordsText(detail.keywords.join(", "));
+		setUseDmKeyword(detail.dmKeyword != null);
+		setDmKeyword(detail.dmKeyword ?? "");
+		setCommentReplyText(detail.commentReplyText ?? "");
+		setNonKeywordCommentReplyText(detail.nonKeywordCommentReplyText ?? "");
+		setFollowerMessages(detail.followerMessages.length > 0 ? detail.followerMessages : [emptyMessage()]);
+		setNonFollowerMessages(
+			detail.nonFollowerMessages.length > 0
+				? detail.nonFollowerMessages
+				: [{ messageType: "TEXT", textContent: settings?.nonFollowerMessageText ?? DEFAULT_NON_FOLLOWER_TEXT }],
+		);
+	};
+
+	const openEditForm = async (id: number) => {
+		setEditingId(id);
+		setFormError(null);
+		setShowForm(true);
+		ensurePostsLoaded();
+		try {
+			const detail = await api.getTemplate(id);
+			applyDetail(detail);
+		} catch (err) {
+			setFormError(err instanceof Error ? err.message : "템플릿 정보를 불러오지 못했습니다");
 		}
 	};
 
@@ -114,10 +183,8 @@ export function TemplatesPage() {
 		setKeywordsText("");
 		setUseDmKeyword(false);
 		setDmKeyword("");
-		setCommentReplyText("");
-		setNonKeywordCommentReplyText("");
 		setFollowerMessages([emptyMessage()]);
-		setNonFollowerMessages([defaultNonFollowerMessage()]);
+		applyDefaultTexts(settings);
 	};
 
 	const handleSubmit = async (e: FormEvent) => {
@@ -146,13 +213,18 @@ export function TemplatesPage() {
 		};
 
 		try {
-			await api.createTemplate(body);
+			if (editingId != null) {
+				await api.updateTemplate(editingId, body);
+			} else {
+				await api.createTemplate(body);
+			}
 			setShowForm(false);
+			setEditingId(null);
 			resetForm();
 			if (page === 0) loadTemplates(0);
 			else setPage(0);
 		} catch (err) {
-			setFormError(err instanceof Error ? err.message : "템플릿 생성에 실패했습니다");
+			setFormError(err instanceof Error ? err.message : (editingId != null ? "템플릿 수정에 실패했습니다" : "템플릿 생성에 실패했습니다"));
 		} finally {
 			setSubmitting(false);
 		}
@@ -162,6 +234,8 @@ export function TemplatesPage() {
 		if (!window.confirm("이 템플릿을 삭제하시겠습니까?")) return;
 		try {
 			await api.deleteTemplate(id);
+			setShowForm(false);
+			setEditingId(null);
 			loadTemplates(page);
 		} catch (err) {
 			alert(err instanceof Error ? err.message : "삭제에 실패했습니다");
@@ -234,8 +308,10 @@ export function TemplatesPage() {
 	return (
 		<div>
 			<div className="page-header">
-				<h2>템플릿</h2>
-				<button onClick={() => (showForm ? setShowForm(false) : openForm())}>{showForm ? "취소" : "+ 템플릿 추가"}</button>
+				<h2>{editingId != null ? "템플릿 수정" : "템플릿"}</h2>
+				<button className={showForm ? "" : "primary-button"} onClick={() => (showForm ? closeForm() : openCreateForm())}>
+					{showForm ? "취소" : "+ 템플릿 추가"}
+				</button>
 			</div>
 
 			{showForm && (
@@ -270,7 +346,14 @@ export function TemplatesPage() {
 								))}
 							</div>
 						)}
-						{selectedPost && <p className="hint">선택됨: {selectedPost.caption?.slice(0, 40) ?? selectedPost.platformPostId}</p>}
+						{postId != null && (
+							<p className="hint">
+								선택됨:{" "}
+								{selectedPost
+									? (selectedPost.caption?.slice(0, 40) ?? selectedPost.platformPostId)
+									: `게시물 ID ${postId} (목록에 없지만 유지됩니다)`}
+							</p>
+						)}
 					</div>
 
 					<label className="checkbox-label">
@@ -334,9 +417,20 @@ export function TemplatesPage() {
 					{renderMessageEditor("팔로워에게 보낼 메시지", followerMessages, setFollowerMessages, "follower")}
 					{renderMessageEditor("논팔로워에게 보낼 메시지", nonFollowerMessages, setNonFollowerMessages, "nonfollower")}
 
-					<button type="submit" disabled={submitting}>
-						{submitting ? "생성 중..." : "템플릿 생성"}
-					</button>
+					<div className="form-actions">
+						<button
+							type="submit"
+							className={editingId != null ? "warning-button" : "primary-button"}
+							disabled={submitting}
+						>
+							{submitting ? (editingId != null ? "수정 중..." : "생성 중...") : editingId != null ? "수정" : "템플릿 생성"}
+						</button>
+						{editingId != null && (
+							<button type="button" className="danger-button" onClick={() => handleDelete(editingId)}>
+								삭제
+							</button>
+						)}
+					</div>
 				</form>
 			)}
 
@@ -348,25 +442,21 @@ export function TemplatesPage() {
 					<table className="data-table">
 						<thead>
 							<tr>
-								<th>이름</th>
-								<th>게시물 ID</th>
+								<th>순번</th>
+								<th>템플릿명</th>
 								<th>키워드</th>
-								<th>DM 키워드</th>
-								<th>발송 시각</th>
-								<th />
+								<th className="hide-mobile">DM 키워드</th>
+								<th className="hide-mobile">발송 시각</th>
 							</tr>
 						</thead>
 						<tbody>
-							{templates.map((t) => (
-								<tr key={t.id}>
+							{templates.map((t, index) => (
+								<tr key={t.id} className="clickable-row" onClick={() => openEditForm(t.id)}>
+									<td>{page * pageSize + index + 1}</td>
 									<td>{t.name}</td>
-									<td>{t.postId}</td>
 									<td>{t.keywords.join(", ") || "-"}</td>
-									<td>{t.dmKeyword ?? "-"}</td>
-									<td>{t.dispatchTime ?? "즉시"}</td>
-									<td>
-										<button onClick={() => handleDelete(t.id)}>삭제</button>
-									</td>
+									<td className="hide-mobile">{t.dmKeyword ?? "-"}</td>
+									<td className="hide-mobile">{t.dispatchTime ?? "즉시"}</td>
 								</tr>
 							))}
 						</tbody>

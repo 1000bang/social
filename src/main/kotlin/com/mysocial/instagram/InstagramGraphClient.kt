@@ -42,12 +42,12 @@ class InstagramGraphClient {
 			.body(Map::class.java)
 			?: emptyMap<String, Any?>()
 
-	fun listMedia(accessToken: String): InstagramMediaListResponse =
+	fun listMedia(accessToken: String, limit: Int): InstagramMediaListResponse =
 		restClient.get()
 			.uri { builder ->
 				builder.path("/me/media")
 					.queryParam("fields", "id,caption,media_type,media_url,thumbnail_url,permalink,timestamp")
-					.queryParam("limit", "5")
+					.queryParam("limit", limit.toString())
 					.queryParam("access_token", accessToken)
 					.build()
 			}

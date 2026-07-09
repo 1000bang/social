@@ -50,6 +50,20 @@ export interface TemplateResponse {
 	createdAt: string;
 }
 
+export interface TemplateDetailResponse {
+	id: number;
+	name: string;
+	postId: number;
+	dispatchTime: string | null;
+	keywords: string[];
+	dmKeyword: string | null;
+	commentReplyText: string | null;
+	nonKeywordCommentReplyText: string | null;
+	followerMessages: MessageInput[];
+	nonFollowerMessages: MessageInput[];
+	createdAt: string;
+}
+
 export interface SendLogResponse {
 	id: number;
 	templateId: number;
@@ -85,4 +99,18 @@ export interface PostResponse {
 export interface MediaUploadResponse {
 	id: number;
 	url: string;
+}
+
+export interface AccountSettingsResponse {
+	commentReplyText: string | null;
+	nonKeywordCommentReplyText: string | null;
+	nonFollowerMessageText: string | null;
+	postPickerLimit: number;
+}
+
+export interface UpdateAccountSettingsRequest {
+	commentReplyText?: string | null;
+	nonKeywordCommentReplyText?: string | null;
+	nonFollowerMessageText?: string | null;
+	postPickerLimit: number;
 }

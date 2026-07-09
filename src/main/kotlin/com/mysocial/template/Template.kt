@@ -28,7 +28,7 @@ class Template(
 
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "post_id", nullable = false)
-	val post: Post,
+	var post: Post,
 
 	@Column(name = "dispatch_time")
 	var dispatchTime: LocalTime? = null,

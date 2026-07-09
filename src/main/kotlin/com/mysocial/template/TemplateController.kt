@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestAttribute
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -35,6 +36,19 @@ class TemplateController(
 		@RequestParam(defaultValue = "0") page: Int,
 		@RequestParam(defaultValue = "10") size: Int,
 	): PageResponse<TemplateResponse> = templateService.findByAccount(accountId, page, size)
+
+	@GetMapping("/{id}")
+	fun detail(
+		@RequestAttribute(CURRENT_ACCOUNT_ID_ATTRIBUTE) accountId: Long,
+		@PathVariable id: Long,
+	): TemplateDetailResponse = templateService.findDetail(accountId, id)
+
+	@PutMapping("/{id}")
+	fun update(
+		@RequestAttribute(CURRENT_ACCOUNT_ID_ATTRIBUTE) accountId: Long,
+		@PathVariable id: Long,
+		@RequestBody request: CreateTemplateRequest,
+	): TemplateResponse = TemplateResponse.from(templateService.update(accountId, id, request))
 
 	@DeleteMapping("/{id}")
 	fun delete(

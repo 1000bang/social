@@ -4,6 +4,7 @@ import com.mysocial.account.AccessTokenRepository
 import com.mysocial.account.TokenRefreshStatus
 import com.mysocial.instagram.InstagramGraphClient
 import com.mysocial.instagram.InstagramMediaItem
+import com.mysocial.settings.AccountSettingsService
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
@@ -14,14 +15,16 @@ class PostService(
 	private val accessTokenRepository: AccessTokenRepository,
 	private val postRepository: PostRepository,
 	private val instagramGraphClient: InstagramGraphClient,
+	private val accountSettingsService: AccountSettingsService,
 ) {
 
 	@Transactional
 	fun listFromInstagram(accountId: Long): List<PostResponse> {
 		val token = accessTokenRepository.findTopByAccountIdAndRefreshStatusOrderByIssuedAtDesc(accountId, TokenRefreshStatus.SUCCESS)
 			?: return emptyList()
+		val limit = accountSettingsService.getPostPickerLimit(accountId)
 
-		return instagramGraphClient.listMedia(token.encryptedToken).data.map { item ->
+		return instagramGraphClient.listMedia(token.encryptedToken, limit).data.map { item ->
 			val post = upsertPost(accountId, item)
 			PostResponse(
 				id = post.id,

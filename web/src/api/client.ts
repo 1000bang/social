@@ -1,4 +1,5 @@
 import type {
+	AccountSettingsResponse,
 	ChartBucket,
 	ChartGranularity,
 	CreateTemplateRequest,
@@ -7,7 +8,9 @@ import type {
 	PostResponse,
 	SendLogResponse,
 	SendLogSummaryResponse,
+	TemplateDetailResponse,
 	TemplateResponse,
+	UpdateAccountSettingsRequest,
 } from "./types";
 
 const TOKEN_KEY = "mysocial_jwt";
@@ -54,6 +57,9 @@ export const api = {
 		request<PageResponse<TemplateResponse>>(`/api/templates?page=${page}&size=${size}`),
 	createTemplate: (body: CreateTemplateRequest) =>
 		request<TemplateResponse>("/api/templates", { method: "POST", body: JSON.stringify(body) }),
+	getTemplate: (id: number) => request<TemplateDetailResponse>(`/api/templates/${id}`),
+	updateTemplate: (id: number, body: CreateTemplateRequest) =>
+		request<TemplateResponse>(`/api/templates/${id}`, { method: "PUT", body: JSON.stringify(body) }),
 	deleteTemplate: (id: number) => request<void>(`/api/templates/${id}`, { method: "DELETE" }),
 	listSendLogs: (page = 0, size = 10) =>
 		request<PageResponse<SendLogResponse>>(`/api/send-logs?page=${page}&size=${size}`),
@@ -66,4 +72,7 @@ export const api = {
 		formData.append("file", file);
 		return request<MediaUploadResponse>("/api/media", { method: "POST", body: formData });
 	},
+	getSettings: () => request<AccountSettingsResponse>("/api/settings"),
+	updateSettings: (body: UpdateAccountSettingsRequest) =>
+		request<AccountSettingsResponse>("/api/settings", { method: "PUT", body: JSON.stringify(body) }),
 };

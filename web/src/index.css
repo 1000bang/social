@@ -7,7 +7,12 @@
 	--accent: #7c3aed;
 	--accent-hover: #6d28d9;
 	--danger: #dc2626;
+	--danger-hover: #b91c1c;
 	--success: #16a34a;
+	--primary: #3b82f6;
+	--primary-hover: #2563eb;
+	--warning: #f59e0b;
+	--warning-hover: #d97706;
 
 	font: 15px/1.5 system-ui, "Segoe UI", Roboto, sans-serif;
 	color: var(--text);
@@ -71,6 +76,7 @@ textarea {
 }
 
 .navbar {
+	position: relative;
 	display: flex;
 	align-items: center;
 	gap: 20px;
@@ -96,6 +102,72 @@ textarea {
 
 .logout-button {
 	margin-left: auto;
+}
+
+.navbar-links {
+	display: flex;
+	align-items: center;
+	gap: 20px;
+}
+
+.hamburger-button {
+	display: none;
+	margin-left: auto;
+	border: none;
+	background: transparent;
+	font-size: 22px;
+	line-height: 1;
+	padding: 4px 8px;
+}
+
+.mobile-menu {
+	display: none;
+	position: absolute;
+	top: 100%;
+	right: 24px;
+	flex-direction: column;
+	min-width: 160px;
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+	padding: 8px;
+	z-index: 10;
+}
+
+.mobile-menu.open {
+	display: flex;
+}
+
+.mobile-menu a,
+.mobile-menu button {
+	padding: 10px 12px;
+	text-align: left;
+	border: none;
+	background: none;
+	border-radius: 6px;
+	color: var(--text);
+}
+
+.mobile-menu a:hover,
+.mobile-menu button:hover {
+	background: var(--bg);
+}
+
+.mobile-menu a.active {
+	color: var(--accent);
+	font-weight: 600;
+}
+
+@media (max-width: 640px) {
+	.navbar-links,
+	.navbar > .logout-button {
+		display: none;
+	}
+
+	.hamburger-button {
+		display: block;
+	}
 }
 
 .content {
@@ -191,6 +263,59 @@ textarea {
 
 .data-table tr:last-child td {
 	border-bottom: none;
+}
+
+.data-table tr.clickable-row {
+	cursor: pointer;
+}
+
+.data-table tr.clickable-row:hover {
+	background: var(--bg);
+}
+
+.form-actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 10px;
+}
+
+.primary-button {
+	background: var(--primary);
+	color: #fff;
+	border-color: var(--primary);
+}
+
+.primary-button:hover {
+	background: var(--primary-hover);
+	border-color: var(--primary-hover);
+}
+
+.warning-button {
+	background: var(--warning);
+	color: #fff;
+	border-color: var(--warning);
+}
+
+.warning-button:hover {
+	background: var(--warning-hover);
+	border-color: var(--warning-hover);
+}
+
+.danger-button {
+	background: var(--danger);
+	color: #fff;
+	border-color: var(--danger);
+}
+
+.danger-button:hover {
+	background: var(--danger-hover);
+	border-color: var(--danger-hover);
+}
+
+@media (max-width: 640px) {
+	.data-table .hide-mobile {
+		display: none;
+	}
 }
 
 .field-label {
