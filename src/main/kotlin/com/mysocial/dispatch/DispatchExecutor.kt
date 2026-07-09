@@ -77,10 +77,21 @@ class DispatchExecutor(
 
 	@Transactional
 	fun handleFollowCheckClick(dispatchTargetId: Long, senderPsid: String) {
-		val target = dispatchTargetRepository.findById(dispatchTargetId).orElse(null) ?: return
-		if (target.status != DispatchStatus.AWAITING_FOLLOW_CHECK) return
+		val target = dispatchTargetRepository.findById(dispatchTargetId).orElse(null)
+		if (target == null) {
+			log.warn("팔로우 확인 버튼 처리 불가: dispatchTarget을 찾을 수 없음 dispatchTargetId={}", dispatchTargetId)
+			return
+		}
+		if (target.status != DispatchStatus.AWAITING_FOLLOW_CHECK) {
+			log.warn("팔로우 확인 버튼 처리 불가: 대기 상태가 아님 dispatchTargetId={}, status={}", dispatchTargetId, target.status)
+			return
+		}
 		val template = target.template
-		val token = latestToken(template.account.id) ?: return
+		val token = latestToken(template.account.id)
+		if (token == null) {
+			log.warn("팔로우 확인 버튼 처리 불가: 유효한 액세스 토큰 없음 accountId={}", template.account.id)
+			return
+		}
 
 		runCatching {
 			val profile = instagramGraphClient.getUserProfile(token, senderPsid)
@@ -116,12 +127,13 @@ class DispatchExecutor(
 	}
 
 	private fun sendAudienceMessages(template: Template, audienceType: AudienceType, token: String, recipientId: String) {
-		template.messages
-			.filter { it.audienceType == audienceType }
-			.sortedBy { it.orderIndex }
-			.forEach { message ->
-				instagramMessagingClient.sendDirectMessage(token, recipientId, MessagePayloadBuilder.fromTemplateMessage(message))
-			}
+		val messages = template.messages.filter { it.audienceType == audienceType }.sortedBy { it.orderIndex }
+		if (messages.isEmpty()) {
+			log.warn("발송할 메시지가 없습니다: templateId={}, audienceType={}", template.id, audienceType)
+		}
+		messages.forEach { message ->
+			instagramMessagingClient.sendDirectMessage(token, recipientId, MessagePayloadBuilder.fromTemplateMessage(message))
+		}
 	}
 
 	private fun latestToken(accountId: Long): String? =

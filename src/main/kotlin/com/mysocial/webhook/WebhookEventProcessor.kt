@@ -68,6 +68,9 @@ class WebhookEventProcessor(
 		val from = value.from ?: return
 		val text = value.text ?: return
 
+		// 비즈니스 계정이 자동 답글로 남긴 댓글이 다시 웹훅으로 들어와 무한 답글 루프에 빠지는 것을 방지
+		if (from.id == account.platformAccountId) return
+
 		if (commentRepository.existsByPlatformCommentId(value.id)) return
 
 		val post = postRepository.findByAccountIdAndPlatformPostId(account.id, mediaId)
@@ -99,6 +102,7 @@ class WebhookEventProcessor(
 		}
 
 		val mid = event.message?.mid ?: return
+		if (event.message.isEcho) return
 		val text = event.message.text ?: return
 
 		if (directMessageRepository.existsByPlatformMessageId(mid)) return

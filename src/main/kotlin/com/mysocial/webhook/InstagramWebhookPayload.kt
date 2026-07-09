@@ -52,6 +52,7 @@ data class WebhookMessagingEvent(
 data class WebhookMessageContent(
 	val mid: String? = null,
 	val text: String? = null,
+	@JsonProperty("is_echo") val isEcho: Boolean = false,
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
