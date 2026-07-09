@@ -8,6 +8,8 @@ import com.mysocial.account.AccessTokenRepository
 import com.mysocial.account.TokenRefreshStatus
 import com.mysocial.common.SocialPlatform
 import com.mysocial.config.MetaAppProperties
+import com.mysocial.instagram.InstagramGraphClient
+import com.mysocial.instagram.WEBHOOK_SUBSCRIBED_FIELDS
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -32,6 +34,7 @@ class InstagramAuthController(
 	private val accessTokenRepository: AccessTokenRepository,
 	private val jwtService: JwtService,
 	private val metaAppProperties: MetaAppProperties,
+	private val instagramGraphClient: InstagramGraphClient,
 ) {
 	private val log = LoggerFactory.getLogger(javaClass)
 
@@ -70,6 +73,12 @@ class InstagramAuthController(
 					refreshStatus = TokenRefreshStatus.SUCCESS,
 				),
 			)
+
+			runCatching {
+				instagramGraphClient.subscribeApp(tokenResult.longLivedToken, igAccount.id, WEBHOOK_SUBSCRIBED_FIELDS)
+			}.onFailure { ex ->
+				log.warn("웹훅 구독 갱신 실패: accountId={}, platformAccountId={}", account.id, igAccount.id, ex)
+			}
 
 			val jwt = jwtService.issueToken(account.id)
 			"${metaAppProperties.webAuthCallbackUrl}?token=${encode(jwt)}"

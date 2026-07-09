@@ -39,7 +39,7 @@ class DebugInstagramController(
 	@PostMapping("/subscribe")
 	fun subscribe(
 		@RequestAttribute(CURRENT_ACCOUNT_ID_ATTRIBUTE) accountId: Long,
-		@RequestParam(defaultValue = "comments,messages") fields: String,
+		@RequestParam(defaultValue = WEBHOOK_SUBSCRIBED_FIELDS) fields: String,
 	): Map<String, Any?> = withToken(accountId) { token ->
 		val igUserId = accountRepository.findById(accountId).orElseThrow().platformAccountId
 		instagramGraphClient.subscribeApp(token, igUserId, fields)
