@@ -10,6 +10,22 @@ const GRANULARITY_LABEL: Record<ChartGranularity, string> = {
 	MONTH: "월별",
 };
 
+function formatLogDate(iso: string): string {
+	const date = new Date(iso);
+	const now = new Date();
+	const isToday =
+		date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth() && date.getDate() === now.getDate();
+
+	if (isToday) {
+		return date.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
+	}
+
+	const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+	const startOfDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+	const diffDays = Math.round((startOfToday.getTime() - startOfDate.getTime()) / (1000 * 60 * 60 * 24));
+	return `${diffDays}일전`;
+}
+
 export function SendLogsPage() {
 	const [logs, setLogs] = useState<SendLogResponse[]>([]);
 	const [loading, setLoading] = useState(true);
@@ -87,10 +103,10 @@ export function SendLogsPage() {
 					<thead>
 						<tr>
 							<th>템플릿</th>
-							<th>대상</th>
-							<th>수신자</th>
+							<th className="hide-mobile">대상</th>
+							<th className="hide-mobile">수신자</th>
 							<th>결과</th>
-							<th>실패 사유</th>
+							<th className="hide-mobile">실패 사유</th>
 							<th>일시</th>
 						</tr>
 					</thead>
@@ -98,11 +114,11 @@ export function SendLogsPage() {
 						{logs.map((log) => (
 							<tr key={log.id}>
 								<td>{log.templateName}</td>
-								<td>{log.audienceType ?? "-"}</td>
-								<td>{log.recipientUsername ? `@${log.recipientUsername}` : log.recipientPlatformUserId}</td>
+								<td className="hide-mobile">{log.audienceType ?? "-"}</td>
+								<td className="hide-mobile">{log.recipientUsername ? `@${log.recipientUsername}` : log.recipientPlatformUserId}</td>
 								<td className={log.result === "SUCCESS" ? "success" : "failure"}>{log.result}</td>
-								<td>{log.failureReason ?? "-"}</td>
-								<td>{new Date(log.createdAt).toLocaleString("ko-KR")}</td>
+								<td className="hide-mobile">{log.failureReason ?? "-"}</td>
+								<td>{formatLogDate(log.createdAt)}</td>
 							</tr>
 						))}
 					</tbody>
