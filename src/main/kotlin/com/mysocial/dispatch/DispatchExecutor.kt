@@ -27,11 +27,22 @@ class DispatchExecutor(
 
 	@Transactional
 	fun replyToNonMatchingComment(templateId: Long, commentId: String) {
-		val template = templateRepository.findById(templateId).orElse(null) ?: return
-		val token = latestToken(template.account.id) ?: return
+		log.info("비키워드 댓글 답글 진입: templateId={}, commentId={}", templateId, commentId)
+		val template = templateRepository.findById(templateId).orElse(null)
+		if (template == null) {
+			log.warn("비키워드 댓글 답글 처리 불가: template을 찾을 수 없음 templateId={}", templateId)
+			return
+		}
+		val token = latestToken(template.account.id)
+		if (token == null) {
+			log.warn("비키워드 댓글 답글 처리 불가: 유효한 액세스 토큰 없음 accountId={}", template.account.id)
+			return
+		}
 
 		runCatching {
 			instagramMessagingClient.replyToComment(token, commentId, template.resolvedNonKeywordCommentReplyText())
+		}.onSuccess {
+			log.info("비키워드 댓글 답글 완료: templateId={}, commentId={}", templateId, commentId)
 		}.onFailure { ex ->
 			log.warn("비키워드 댓글 답글 실패: templateId={}, commentId={}", templateId, commentId, ex)
 		}
@@ -39,10 +50,22 @@ class DispatchExecutor(
 
 	@Transactional
 	fun sendInitialPrompt(dispatchTargetId: Long) {
-		val target = dispatchTargetRepository.findById(dispatchTargetId).orElse(null) ?: return
-		if (target.status != DispatchStatus.PENDING) return
+		log.info("초기 발송 진입: dispatchTargetId={}", dispatchTargetId)
+		val target = dispatchTargetRepository.findById(dispatchTargetId).orElse(null)
+		if (target == null) {
+			log.warn("초기 발송 처리 불가: dispatchTarget을 찾을 수 없음 dispatchTargetId={}", dispatchTargetId)
+			return
+		}
+		if (target.status != DispatchStatus.PENDING) {
+			log.warn("초기 발송 처리 불가: 대기(PENDING) 상태가 아님 dispatchTargetId={}, status={}", dispatchTargetId, target.status)
+			return
+		}
 		val template = target.template
-		val token = latestToken(template.account.id) ?: return
+		val token = latestToken(template.account.id)
+		if (token == null) {
+			log.warn("초기 발송 처리 불가: 유효한 액세스 토큰 없음 accountId={}", template.account.id)
+			return
+		}
 
 		runCatching {
 			if (target.triggerType == TriggerType.COMMENT) {
@@ -60,6 +83,8 @@ class DispatchExecutor(
 				)
 			}
 			target.markAwaitingFollowCheck()
+		}.onSuccess {
+			log.info("초기 발송 완료: dispatchTargetId={}, status={}", dispatchTargetId, target.status)
 		}.onFailure { ex ->
 			log.warn("초기 발송 실패: dispatchTargetId={}", dispatchTargetId, ex)
 			target.markFailed(Instant.now())
@@ -77,6 +102,7 @@ class DispatchExecutor(
 
 	@Transactional
 	fun handleFollowCheckClick(dispatchTargetId: Long, senderPsid: String) {
+		log.info("팔로우 확인 버튼 처리 진입: dispatchTargetId={}, senderPsid={}", dispatchTargetId, senderPsid)
 		val target = dispatchTargetRepository.findById(dispatchTargetId).orElse(null)
 		if (target == null) {
 			log.warn("팔로우 확인 버튼 처리 불가: dispatchTarget을 찾을 수 없음 dispatchTargetId={}", dispatchTargetId)
@@ -98,6 +124,13 @@ class DispatchExecutor(
 			val username = profile["username"] as? String
 			val isFollowing = profile["is_user_follow_business"] as? Boolean ?: false
 			val audienceType = if (isFollowing) AudienceType.FOLLOWER else AudienceType.NON_FOLLOWER
+			log.info(
+				"팔로우 여부 확인 결과: dispatchTargetId={}, senderPsid={}, isFollowing={}, audienceType={}",
+				dispatchTargetId,
+				senderPsid,
+				isFollowing,
+				audienceType,
+			)
 
 			sendAudienceMessages(template, audienceType, token, senderPsid)
 
@@ -111,6 +144,8 @@ class DispatchExecutor(
 					result = SendResult.SUCCESS,
 				),
 			)
+		}.onSuccess {
+			log.info("팔로우 분기 발송 완료: dispatchTargetId={}", dispatchTargetId)
 		}.onFailure { ex ->
 			log.warn("팔로우 분기 발송 실패: dispatchTargetId={}", dispatchTargetId, ex)
 			target.markFailed(Instant.now())
