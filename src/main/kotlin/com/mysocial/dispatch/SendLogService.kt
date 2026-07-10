@@ -1,6 +1,7 @@
 package com.mysocial.dispatch
 
 import com.mysocial.common.PageResponse
+import com.mysocial.template.TemplateRepository
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
@@ -9,11 +10,13 @@ import java.time.YearMonth
 import java.time.ZoneId
 
 private val ZONE = ZoneId.of("Asia/Seoul")
+private const val TOP_TEMPLATES_LIMIT = 10
 
 @Service
 class SendLogService(
 	private val sendLogRepository: SendLogRepository,
 	private val dispatchTargetRepository: DispatchTargetRepository,
+	private val templateRepository: TemplateRepository,
 ) {
 
 	@Transactional(readOnly = true)
@@ -44,5 +47,33 @@ class SendLogService(
 		}
 
 		return counts.entries.sortedBy { it.key }.map { ChartBucket(it.key, it.value) }
+	}
+
+	@Transactional(readOnly = true)
+	fun topTemplates(accountId: Long): List<TemplateRankingResponse> {
+		val contactedByTemplate = dispatchTargetRepository
+			.countDistinctRecipientsByTemplate(accountId, DispatchStatus.PENDING)
+			.associate { it.templateId to it.count }
+		val sentByTemplate = sendLogRepository
+			.countByTemplateGroupedByTemplate(accountId, SendResult.SUCCESS)
+			.associate { it.templateId to it.count }
+
+		val templateIds = contactedByTemplate.keys + sentByTemplate.keys
+		if (templateIds.isEmpty()) return emptyList()
+
+		val templateNames = templateRepository.findAllById(templateIds).associate { it.id to it.name }
+
+		return templateIds
+			.mapNotNull { id ->
+				val name = templateNames[id] ?: return@mapNotNull null
+				TemplateRankingResponse(
+					templateId = id,
+					templateName = name,
+					contactedUsers = contactedByTemplate[id] ?: 0,
+					messagesSent = sentByTemplate[id] ?: 0,
+				)
+			}
+			.sortedByDescending { it.messagesSent }
+			.take(TOP_TEMPLATES_LIMIT)
 	}
 }

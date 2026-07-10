@@ -10,6 +10,18 @@ data class SendLogSummaryResponse(
 	val messagesSentThisMonth: Long,
 )
 
+data class TemplateStatRow(
+	val templateId: Long,
+	val count: Long,
+)
+
+data class TemplateRankingResponse(
+	val templateId: Long,
+	val templateName: String,
+	val contactedUsers: Long,
+	val messagesSent: Long,
+)
+
 data class ChartBucket(
 	val bucket: String,
 	val count: Int,

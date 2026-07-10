@@ -2,7 +2,13 @@ import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import { Pagination } from "../components/Pagination";
 import { SimpleBarChart } from "../components/SimpleBarChart";
-import type { ChartBucket, ChartGranularity, SendLogResponse, SendLogSummaryResponse } from "../api/types";
+import type {
+	ChartBucket,
+	ChartGranularity,
+	SendLogResponse,
+	SendLogSummaryResponse,
+	TemplateRankingResponse,
+} from "../api/types";
 
 const GRANULARITY_LABEL: Record<ChartGranularity, string> = {
 	HOUR: "시간별",
@@ -39,6 +45,9 @@ export function SendLogsPage() {
 	const [chartData, setChartData] = useState<ChartBucket[]>([]);
 	const [chartLoading, setChartLoading] = useState(true);
 
+	const [topTemplates, setTopTemplates] = useState<TemplateRankingResponse[]>([]);
+	const [topTemplatesLoading, setTopTemplatesLoading] = useState(true);
+
 	useEffect(() => {
 		setLoading(true);
 		api
@@ -53,6 +62,14 @@ export function SendLogsPage() {
 
 	useEffect(() => {
 		api.getSendLogSummary().then(setSummary).catch(() => setSummary(null));
+	}, []);
+
+	useEffect(() => {
+		api
+			.getTopTemplates()
+			.then(setTopTemplates)
+			.catch(() => setTopTemplates([]))
+			.finally(() => setTopTemplatesLoading(false));
 	}, []);
 
 	useEffect(() => {
@@ -93,6 +110,36 @@ export function SendLogsPage() {
 				{chartLoading && <p>불러오는 중...</p>}
 				{!chartLoading && chartData.length === 0 && <p className="hint">{GRANULARITY_LABEL[granularity]} 발송 데이터가 없습니다.</p>}
 				{!chartLoading && chartData.length > 0 && <SimpleBarChart data={chartData} />}
+			</div>
+
+			<div className="chart-section">
+				<div className="chart-header">
+					<strong>템플릿 TOP 10 랭크</strong>
+				</div>
+				{topTemplatesLoading && <p>불러오는 중...</p>}
+				{!topTemplatesLoading && topTemplates.length === 0 && <p className="hint">아직 발송 이력이 없습니다.</p>}
+				{topTemplates.length > 0 && (
+					<table className="data-table">
+						<thead>
+							<tr>
+								<th>순번</th>
+								<th>템플릿명</th>
+								<th>컨택 사용자 수</th>
+								<th>메시지 발송수</th>
+							</tr>
+						</thead>
+						<tbody>
+							{topTemplates.map((t, index) => (
+								<tr key={t.templateId}>
+									<td>{index + 1}</td>
+									<td>{t.templateName}</td>
+									<td>{t.contactedUsers}</td>
+									<td>{t.messagesSent}</td>
+								</tr>
+							))}
+						</tbody>
+					</table>
+				)}
 			</div>
 
 			{loading && <p>불러오는 중...</p>}

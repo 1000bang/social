@@ -9,6 +9,7 @@ import type {
 	SendLogResponse,
 	SendLogSummaryResponse,
 	TemplateDetailResponse,
+	TemplateRankingResponse,
 	TemplateResponse,
 	UpdateAccountSettingsRequest,
 } from "./types";
@@ -52,7 +53,6 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 }
 
 export const api = {
-	getLoginUrl: () => request<{ url: string }>("/api/auth/instagram/login-url"),
 	listTemplates: (page = 0, size = 10) =>
 		request<PageResponse<TemplateResponse>>(`/api/templates?page=${page}&size=${size}`),
 	createTemplate: (body: CreateTemplateRequest) =>
@@ -66,6 +66,7 @@ export const api = {
 	getSendLogSummary: () => request<SendLogSummaryResponse>("/api/send-logs/summary"),
 	getSendLogChart: (granularity: ChartGranularity) =>
 		request<ChartBucket[]>(`/api/send-logs/chart?granularity=${granularity}`),
+	getTopTemplates: () => request<TemplateRankingResponse[]>("/api/send-logs/top-templates"),
 	listPosts: () => request<PostResponse[]>("/api/posts"),
 	uploadMedia: (file: File) => {
 		const formData = new FormData();

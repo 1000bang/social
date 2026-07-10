@@ -30,4 +30,8 @@ class SendLogController(
 		@RequestAttribute(CURRENT_ACCOUNT_ID_ATTRIBUTE) accountId: Long,
 		@RequestParam granularity: ChartGranularity,
 	): List<ChartBucket> = sendLogService.chart(accountId, granularity)
+
+	@GetMapping("/top-templates")
+	fun topTemplates(@RequestAttribute(CURRENT_ACCOUNT_ID_ATTRIBUTE) accountId: Long): List<TemplateRankingResponse> =
+		sendLogService.topTemplates(accountId)
 }

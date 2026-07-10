@@ -44,6 +44,15 @@ class InstagramAuthController(
 		return mapOf("url" to instagramOAuthClient.buildAuthorizationUrl(state))
 	}
 
+	// iOS Chrome에서 www.instagram.com으로 바로 이동하면 Universal Link가 인스타그램 앱으로 가로채서
+	// 콜백이 깨지는 문제가 있어, 우리 도메인을 한 번 거치는 서버 리다이렉트로 우회를 시도한다.
+	@GetMapping("/redirect")
+	fun redirect(): ResponseEntity<Void> {
+		val state = UUID.randomUUID().toString()
+		val url = instagramOAuthClient.buildAuthorizationUrl(state)
+		return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(url)).build()
+	}
+
 	@GetMapping("/callback")
 	@Transactional
 	fun callback(@RequestParam code: String): ResponseEntity<Void> {

@@ -86,6 +86,13 @@ export interface ChartBucket {
 	count: number;
 }
 
+export interface TemplateRankingResponse {
+	templateId: number;
+	templateName: string;
+	contactedUsers: number;
+	messagesSent: number;
+}
+
 export interface PostResponse {
 	id: number;
 	platformPostId: string;

@@ -81,12 +81,6 @@ textarea {
 	background: var(--accent-hover);
 }
 
-.centered-page a.disabled-link {
-	opacity: 0.6;
-	pointer-events: none;
-	cursor: not-allowed;
-}
-
 .navbar {
 	position: relative;
 	display: flex;

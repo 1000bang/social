@@ -30,4 +30,18 @@ interface DispatchTargetRepository : JpaRepository<DispatchTarget, Long> {
 		@Param("excludedStatus") excludedStatus: DispatchStatus,
 		@Param("from") from: Instant,
 	): Long
+
+	@Query(
+		"""
+		SELECT new com.mysocial.dispatch.TemplateStatRow(d.template.id, COUNT(DISTINCT d.recipientPlatformUserId))
+		FROM DispatchTarget d
+		WHERE d.template.account.id = :accountId
+		  AND d.status <> :excludedStatus
+		GROUP BY d.template.id
+		""",
+	)
+	fun countDistinctRecipientsByTemplate(
+		@Param("accountId") accountId: Long,
+		@Param("excludedStatus") excludedStatus: DispatchStatus,
+	): List<TemplateStatRow>
 }
