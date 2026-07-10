@@ -30,6 +30,9 @@ class AccountSettings(
 
 	@Column(name = "post_picker_limit", nullable = false)
 	var postPickerLimit: Int = DEFAULT_POST_PICKER_LIMIT,
+
+	@Column(name = "max_messages_per_audience", nullable = false)
+	var maxMessagesPerAudience: Int = DEFAULT_MAX_MESSAGES_PER_AUDIENCE,
 ) : BaseTimeEntity() {
 
 	@Id
@@ -40,5 +43,9 @@ class AccountSettings(
 		const val DEFAULT_POST_PICKER_LIMIT = 5
 		const val MIN_POST_PICKER_LIMIT = 1
 		const val MAX_POST_PICKER_LIMIT = 25
+
+		const val DEFAULT_MAX_MESSAGES_PER_AUDIENCE = 3
+		const val MIN_MAX_MESSAGES_PER_AUDIENCE = 1
+		const val MAX_MAX_MESSAGES_PER_AUDIENCE = 5
 	}
 }

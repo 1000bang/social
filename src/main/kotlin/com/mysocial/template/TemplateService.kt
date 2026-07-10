@@ -5,6 +5,7 @@ import com.mysocial.common.PageResponse
 import com.mysocial.dispatch.DispatchTargetRepository
 import com.mysocial.dispatch.SendLogRepository
 import com.mysocial.post.PostRepository
+import com.mysocial.settings.AccountSettingsService
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
@@ -17,15 +18,17 @@ class TemplateService(
 	private val templateRepository: TemplateRepository,
 	private val dispatchTargetRepository: DispatchTargetRepository,
 	private val sendLogRepository: SendLogRepository,
+	private val accountSettingsService: AccountSettingsService,
 ) {
 
 	@Transactional
 	fun create(accountId: Long, request: CreateTemplateRequest): Template {
-		require(request.followerMessages.size <= MAX_MESSAGES_PER_AUDIENCE) {
-			"팔로워 메시지는 최대 ${MAX_MESSAGES_PER_AUDIENCE}개까지 설정 가능합니다"
+		val maxMessages = accountSettingsService.getMaxMessagesPerAudience(accountId)
+		require(request.followerMessages.size <= maxMessages) {
+			"팔로워 메시지는 최대 ${maxMessages}개까지 설정 가능합니다"
 		}
-		require(request.nonFollowerMessages.size <= MAX_MESSAGES_PER_AUDIENCE) {
-			"논팔로워 메시지는 최대 ${MAX_MESSAGES_PER_AUDIENCE}개까지 설정 가능합니다"
+		require(request.nonFollowerMessages.size <= maxMessages) {
+			"논팔로워 메시지는 최대 ${maxMessages}개까지 설정 가능합니다"
 		}
 		ensurePostNotTaken(request.postId)
 
@@ -66,11 +69,12 @@ class TemplateService(
 
 	@Transactional
 	fun update(accountId: Long, id: Long, request: CreateTemplateRequest): Template {
-		require(request.followerMessages.size <= MAX_MESSAGES_PER_AUDIENCE) {
-			"팔로워 메시지는 최대 ${MAX_MESSAGES_PER_AUDIENCE}개까지 설정 가능합니다"
+		val maxMessages = accountSettingsService.getMaxMessagesPerAudience(accountId)
+		require(request.followerMessages.size <= maxMessages) {
+			"팔로워 메시지는 최대 ${maxMessages}개까지 설정 가능합니다"
 		}
-		require(request.nonFollowerMessages.size <= MAX_MESSAGES_PER_AUDIENCE) {
-			"논팔로워 메시지는 최대 ${MAX_MESSAGES_PER_AUDIENCE}개까지 설정 가능합니다"
+		require(request.nonFollowerMessages.size <= maxMessages) {
+			"논팔로워 메시지는 최대 ${maxMessages}개까지 설정 가능합니다"
 		}
 
 		val template = templateRepository.findById(id).orElseThrow { TemplateNotFoundException(id) }
@@ -147,9 +151,5 @@ class TemplateService(
 			}
 			template.messages.add(message)
 		}
-	}
-
-	companion object {
-		private const val MAX_MESSAGES_PER_AUDIENCE = 3
 	}
 }

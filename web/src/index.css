@@ -204,13 +204,26 @@ textarea {
 	display: flex;
 	flex-direction: column;
 	gap: 4px;
-	font-weight: 500;
+	font-weight: 700;
+	font-size: 16px;
+}
+
+.template-form label input,
+.template-form label select,
+.template-form label textarea {
+	font-weight: 400;
+	font-size: 15px;
 }
 
 .message-fieldset {
 	border: 1px solid var(--border);
 	border-radius: 6px;
 	padding: 12px;
+}
+
+.message-fieldset legend {
+	font-weight: 700;
+	font-size: 16px;
 }
 
 .message-editor {
@@ -326,7 +339,8 @@ textarea {
 
 .field-label {
 	display: block;
-	font-weight: 500;
+	font-weight: 700;
+	font-size: 16px;
 	margin-bottom: 4px;
 }
 

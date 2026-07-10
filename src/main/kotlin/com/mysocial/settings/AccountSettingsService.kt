@@ -20,6 +20,12 @@ class AccountSettingsService(
 		require(request.postPickerLimit in AccountSettings.MIN_POST_PICKER_LIMIT..AccountSettings.MAX_POST_PICKER_LIMIT) {
 			"한번에 보여질 게시글 수는 ${AccountSettings.MIN_POST_PICKER_LIMIT}~${AccountSettings.MAX_POST_PICKER_LIMIT} 사이여야 합니다"
 		}
+		require(
+			request.maxMessagesPerAudience in AccountSettings.MIN_MAX_MESSAGES_PER_AUDIENCE..AccountSettings.MAX_MAX_MESSAGES_PER_AUDIENCE,
+		) {
+			"팔로워/논팔로워에게 보낼 메시지 최대 개수는 " +
+				"${AccountSettings.MIN_MAX_MESSAGES_PER_AUDIENCE}~${AccountSettings.MAX_MAX_MESSAGES_PER_AUDIENCE} 사이여야 합니다"
+		}
 
 		val settings = accountSettingsRepository.findByAccountId(accountId) ?: AccountSettings(
 			account = accountRepository.findById(accountId)
@@ -30,6 +36,7 @@ class AccountSettingsService(
 		settings.nonKeywordCommentReplyText = request.nonKeywordCommentReplyText?.takeIf { it.isNotBlank() }
 		settings.nonFollowerMessageText = request.nonFollowerMessageText?.takeIf { it.isNotBlank() }
 		settings.postPickerLimit = request.postPickerLimit
+		settings.maxMessagesPerAudience = request.maxMessagesPerAudience
 
 		return AccountSettingsResponse.from(accountSettingsRepository.save(settings))
 	}
@@ -37,4 +44,9 @@ class AccountSettingsService(
 	@Transactional(readOnly = true)
 	fun getPostPickerLimit(accountId: Long): Int =
 		accountSettingsRepository.findByAccountId(accountId)?.postPickerLimit ?: AccountSettings.DEFAULT_POST_PICKER_LIMIT
+
+	@Transactional(readOnly = true)
+	fun getMaxMessagesPerAudience(accountId: Long): Int =
+		accountSettingsRepository.findByAccountId(accountId)?.maxMessagesPerAudience
+			?: AccountSettings.DEFAULT_MAX_MESSAGES_PER_AUDIENCE
 }

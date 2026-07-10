@@ -5,6 +5,7 @@ data class AccountSettingsResponse(
 	val nonKeywordCommentReplyText: String?,
 	val nonFollowerMessageText: String?,
 	val postPickerLimit: Int,
+	val maxMessagesPerAudience: Int,
 ) {
 	companion object {
 		fun from(settings: AccountSettings): AccountSettingsResponse = AccountSettingsResponse(
@@ -12,6 +13,7 @@ data class AccountSettingsResponse(
 			nonKeywordCommentReplyText = settings.nonKeywordCommentReplyText,
 			nonFollowerMessageText = settings.nonFollowerMessageText,
 			postPickerLimit = settings.postPickerLimit,
+			maxMessagesPerAudience = settings.maxMessagesPerAudience,
 		)
 
 		fun default(): AccountSettingsResponse = AccountSettingsResponse(
@@ -19,6 +21,7 @@ data class AccountSettingsResponse(
 			nonKeywordCommentReplyText = null,
 			nonFollowerMessageText = null,
 			postPickerLimit = AccountSettings.DEFAULT_POST_PICKER_LIMIT,
+			maxMessagesPerAudience = AccountSettings.DEFAULT_MAX_MESSAGES_PER_AUDIENCE,
 		)
 	}
 }
@@ -28,4 +31,5 @@ data class UpdateAccountSettingsRequest(
 	val nonKeywordCommentReplyText: String?,
 	val nonFollowerMessageText: String?,
 	val postPickerLimit: Int,
+	val maxMessagesPerAudience: Int,
 )

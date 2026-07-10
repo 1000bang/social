@@ -4,6 +4,8 @@ import type { AccountSettingsResponse } from "../api/types";
 
 const MIN_POST_PICKER_LIMIT = 1;
 const MAX_POST_PICKER_LIMIT = 25;
+const MIN_MAX_MESSAGES_PER_AUDIENCE = 1;
+const MAX_MAX_MESSAGES_PER_AUDIENCE = 5;
 
 export function SettingsPage() {
 	const [loading, setLoading] = useState(true);
@@ -15,12 +17,14 @@ export function SettingsPage() {
 	const [nonKeywordCommentReplyText, setNonKeywordCommentReplyText] = useState("");
 	const [nonFollowerMessageText, setNonFollowerMessageText] = useState("");
 	const [postPickerLimit, setPostPickerLimit] = useState(5);
+	const [maxMessagesPerAudience, setMaxMessagesPerAudience] = useState(3);
 
 	const applySettings = (settings: AccountSettingsResponse) => {
 		setCommentReplyText(settings.commentReplyText ?? "");
 		setNonKeywordCommentReplyText(settings.nonKeywordCommentReplyText ?? "");
 		setNonFollowerMessageText(settings.nonFollowerMessageText ?? "");
 		setPostPickerLimit(settings.postPickerLimit);
+		setMaxMessagesPerAudience(settings.maxMessagesPerAudience);
 	};
 
 	useEffect(() => {
@@ -42,6 +46,7 @@ export function SettingsPage() {
 				nonKeywordCommentReplyText,
 				nonFollowerMessageText,
 				postPickerLimit,
+				maxMessagesPerAudience,
 			});
 			applySettings(settings);
 			setSaveMessage("저장되었습니다");
@@ -103,6 +108,19 @@ export function SettingsPage() {
 						max={MAX_POST_PICKER_LIMIT}
 						value={postPickerLimit}
 						onChange={(e) => setPostPickerLimit(Number(e.target.value))}
+						required
+					/>
+				</label>
+
+				<h3>메시지 설정</h3>
+				<label>
+					팔로워/논팔로워에게 보낼 메시지 최대 개수 ({MIN_MAX_MESSAGES_PER_AUDIENCE}~{MAX_MAX_MESSAGES_PER_AUDIENCE})
+					<input
+						type="number"
+						min={MIN_MAX_MESSAGES_PER_AUDIENCE}
+						max={MAX_MAX_MESSAGES_PER_AUDIENCE}
+						value={maxMessagesPerAudience}
+						onChange={(e) => setMaxMessagesPerAudience(Number(e.target.value))}
 						required
 					/>
 				</label>

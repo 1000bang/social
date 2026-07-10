@@ -113,6 +113,7 @@ export interface AccountSettingsResponse {
 	nonKeywordCommentReplyText: string | null;
 	nonFollowerMessageText: string | null;
 	postPickerLimit: number;
+	maxMessagesPerAudience: number;
 }
 
 export interface UpdateAccountSettingsRequest {
@@ -120,4 +121,5 @@ export interface UpdateAccountSettingsRequest {
 	nonKeywordCommentReplyText?: string | null;
 	nonFollowerMessageText?: string | null;
 	postPickerLimit: number;
+	maxMessagesPerAudience: number;
 }

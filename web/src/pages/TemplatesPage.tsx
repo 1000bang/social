@@ -11,7 +11,7 @@ import type {
 	TemplateResponse,
 } from "../api/types";
 
-const MAX_MESSAGES = 3;
+const DEFAULT_MAX_MESSAGES = 3;
 const DEFAULT_NON_FOLLOWER_TEXT = "팔로우가 확인되지 않았어요! 팔로우 후 다시 요청 부탁드립니다.";
 
 function emptyMessage(): MessageInput {
@@ -33,6 +33,7 @@ export function TemplatesPage() {
 	const [postsError, setPostsError] = useState<string | null>(null);
 
 	const [settings, setSettings] = useState<AccountSettingsResponse | null>(null);
+	const maxMessages = settings?.maxMessagesPerAudience ?? DEFAULT_MAX_MESSAGES;
 
 	const [name, setName] = useState("");
 	const [postId, setPostId] = useState<number | null>(null);
@@ -149,7 +150,7 @@ export function TemplatesPage() {
 	};
 
 	const addMessage = (list: MessageInput[], setList: (v: MessageInput[]) => void) => {
-		if (list.length >= MAX_MESSAGES) return;
+		if (list.length >= maxMessages) return;
 		setList([...list, emptyMessage()]);
 	};
 
@@ -245,7 +246,7 @@ export function TemplatesPage() {
 	const renderMessageEditor = (label: string, list: MessageInput[], setList: (v: MessageInput[]) => void, keyPrefix: string) => (
 		<fieldset className="message-fieldset">
 			<legend>
-				{label} (최대 {MAX_MESSAGES}개)
+				{label} (최대 {maxMessages}개)
 			</legend>
 			{list.map((message, index) => {
 				const uploadKey = `${keyPrefix}-${index}`;
@@ -295,7 +296,7 @@ export function TemplatesPage() {
 					</div>
 				);
 			})}
-			{list.length < MAX_MESSAGES && (
+			{list.length < maxMessages && (
 				<button type="button" onClick={() => addMessage(list, setList)}>
 					+ 메시지 추가
 				</button>
