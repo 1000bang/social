@@ -11,6 +11,7 @@ data class CreateTemplateRequest(
 	val dmKeyword: String? = null,
 	val commentReplyText: String? = null,
 	val nonKeywordCommentReplyText: String? = null,
+	val nonKeywordReplyEnabled: Boolean = true,
 	val followerMessages: List<MessageInput> = emptyList(),
 	val nonFollowerMessages: List<MessageInput> = emptyList(),
 )
@@ -39,6 +40,7 @@ data class TemplateResponse(
 	val dmKeyword: String?,
 	val commentReplyText: String?,
 	val nonKeywordCommentReplyText: String?,
+	val nonKeywordReplyEnabled: Boolean,
 	val createdAt: Instant,
 ) {
 	companion object {
@@ -51,6 +53,7 @@ data class TemplateResponse(
 			dmKeyword = template.dmKeyword,
 			commentReplyText = template.commentReplyText,
 			nonKeywordCommentReplyText = template.nonKeywordCommentReplyText,
+			nonKeywordReplyEnabled = template.nonKeywordReplyEnabled,
 			createdAt = template.createdAt,
 		)
 	}
@@ -65,6 +68,7 @@ data class TemplateDetailResponse(
 	val dmKeyword: String?,
 	val commentReplyText: String?,
 	val nonKeywordCommentReplyText: String?,
+	val nonKeywordReplyEnabled: Boolean,
 	val followerMessages: List<MessageInput>,
 	val nonFollowerMessages: List<MessageInput>,
 	val createdAt: Instant,
@@ -79,6 +83,7 @@ data class TemplateDetailResponse(
 			dmKeyword = template.dmKeyword,
 			commentReplyText = template.commentReplyText,
 			nonKeywordCommentReplyText = template.nonKeywordCommentReplyText,
+			nonKeywordReplyEnabled = template.nonKeywordReplyEnabled,
 			followerMessages = toMessageInputs(template, AudienceType.FOLLOWER),
 			nonFollowerMessages = toMessageInputs(template, AudienceType.NON_FOLLOWER),
 			createdAt = template.createdAt,

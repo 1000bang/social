@@ -44,8 +44,10 @@ class CommentTemplateMatcher(
 			} else {
 				log.info("초기 발송 예약됨(스케줄러 대기): dispatchTargetId={}, dispatchTime={}", target.id, template.dispatchTime)
 			}
-		} else {
+		} else if (template.nonKeywordReplyEnabled) {
 			dispatchExecutor.replyToNonMatchingComment(template.id, commentPlatformId)
+		} else {
+			log.info("비키워드 댓글 응답 생략: 응답하지 않음으로 설정됨 templateId={}, commentId={}", template.id, commentPlatformId)
 		}
 	}
 }

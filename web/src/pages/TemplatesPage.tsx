@@ -44,6 +44,7 @@ export function TemplatesPage() {
 	const [dmKeyword, setDmKeyword] = useState("");
 	const [commentReplyText, setCommentReplyText] = useState("");
 	const [nonKeywordCommentReplyText, setNonKeywordCommentReplyText] = useState("");
+	const [nonKeywordReplyEnabled, setNonKeywordReplyEnabled] = useState(true);
 	const [followerMessages, setFollowerMessages] = useState<MessageInput[]>([emptyMessage()]);
 	const [nonFollowerMessages, setNonFollowerMessages] = useState<MessageInput[]>([
 		{ messageType: "TEXT", textContent: DEFAULT_NON_FOLLOWER_TEXT },
@@ -55,6 +56,7 @@ export function TemplatesPage() {
 	const applyDefaultTexts = (s: AccountSettingsResponse | null) => {
 		setCommentReplyText(s?.commentReplyText ?? "");
 		setNonKeywordCommentReplyText(s?.nonKeywordCommentReplyText ?? "");
+		setNonKeywordReplyEnabled(true);
 		setNonFollowerMessages([{ messageType: "TEXT", textContent: s?.nonFollowerMessageText ?? DEFAULT_NON_FOLLOWER_TEXT }]);
 	};
 
@@ -119,6 +121,7 @@ export function TemplatesPage() {
 		setDmKeyword(detail.dmKeyword ?? "");
 		setCommentReplyText(detail.commentReplyText ?? "");
 		setNonKeywordCommentReplyText(detail.nonKeywordCommentReplyText ?? "");
+		setNonKeywordReplyEnabled(detail.nonKeywordReplyEnabled);
 		setFollowerMessages(detail.followerMessages.length > 0 ? detail.followerMessages : [emptyMessage()]);
 		setNonFollowerMessages(
 			detail.nonFollowerMessages.length > 0
@@ -208,7 +211,8 @@ export function TemplatesPage() {
 				.filter(Boolean),
 			dmKeyword: useDmKeyword ? dmKeyword || undefined : undefined,
 			commentReplyText: commentReplyText || undefined,
-			nonKeywordCommentReplyText: nonKeywordCommentReplyText || undefined,
+			nonKeywordCommentReplyText: nonKeywordReplyEnabled ? nonKeywordCommentReplyText || undefined : undefined,
+			nonKeywordReplyEnabled,
 			followerMessages,
 			nonFollowerMessages,
 		};
@@ -405,15 +409,31 @@ export function TemplatesPage() {
 					</label>
 					<p className="hint">비워두면 기본 문구 "메시지 보냈어요! DM이 안보이면 말씀주세요!"가 사용됩니다.</p>
 
-					<label>
-						키워드가 아닌 댓글에 대한 응답
-						<input
-							value={nonKeywordCommentReplyText}
-							onChange={(e) => setNonKeywordCommentReplyText(e.target.value)}
-							placeholder="댓글 남겨주셔서 감사합니다!"
-						/>
-					</label>
-					<p className="hint">비워두면 기본 문구 "댓글 남겨주셔서 감사합니다!"가 사용됩니다.</p>
+					<div className="checkbox-group">
+						<span className="field-label">키워드가 아닌 댓글에 대한 응답</span>
+						<label className="checkbox-label">
+							<input
+								type="checkbox"
+								checked={!nonKeywordReplyEnabled}
+								onChange={() => setNonKeywordReplyEnabled(false)}
+							/>
+							응답하지 않음
+						</label>
+						<label className="checkbox-label">
+							<input type="checkbox" checked={nonKeywordReplyEnabled} onChange={() => setNonKeywordReplyEnabled(true)} />
+							답글
+						</label>
+						{nonKeywordReplyEnabled && (
+							<>
+								<input
+									value={nonKeywordCommentReplyText}
+									onChange={(e) => setNonKeywordCommentReplyText(e.target.value)}
+									placeholder="댓글 남겨주셔서 감사합니다!"
+								/>
+								<p className="hint">비워두면 기본 문구 "댓글 남겨주셔서 감사합니다!"가 사용됩니다.</p>
+							</>
+						)}
+					</div>
 
 					{renderMessageEditor("팔로워에게 보낼 메시지", followerMessages, setFollowerMessages, "follower")}
 					{renderMessageEditor("논팔로워에게 보낼 메시지", nonFollowerMessages, setNonFollowerMessages, "nonfollower")}

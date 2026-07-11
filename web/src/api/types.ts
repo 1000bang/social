@@ -34,6 +34,7 @@ export interface CreateTemplateRequest {
 	dmKeyword?: string;
 	commentReplyText?: string;
 	nonKeywordCommentReplyText?: string;
+	nonKeywordReplyEnabled: boolean;
 	followerMessages?: MessageInput[];
 	nonFollowerMessages?: MessageInput[];
 }
@@ -47,6 +48,7 @@ export interface TemplateResponse {
 	dmKeyword: string | null;
 	commentReplyText: string | null;
 	nonKeywordCommentReplyText: string | null;
+	nonKeywordReplyEnabled: boolean;
 	createdAt: string;
 }
 
@@ -59,6 +61,7 @@ export interface TemplateDetailResponse {
 	dmKeyword: string | null;
 	commentReplyText: string | null;
 	nonKeywordCommentReplyText: string | null;
+	nonKeywordReplyEnabled: boolean;
 	followerMessages: MessageInput[];
 	nonFollowerMessages: MessageInput[];
 	createdAt: string;

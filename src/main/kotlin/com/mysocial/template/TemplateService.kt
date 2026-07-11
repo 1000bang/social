@@ -45,6 +45,7 @@ class TemplateService(
 			dmKeyword = request.dmKeyword,
 			commentReplyText = request.commentReplyText,
 			nonKeywordCommentReplyText = request.nonKeywordCommentReplyText,
+			nonKeywordReplyEnabled = request.nonKeywordReplyEnabled,
 		)
 
 		request.keywords.forEach { template.keywords.add(TemplateKeyword(template = template, keyword = it)) }
@@ -90,6 +91,7 @@ class TemplateService(
 		template.dmKeyword = request.dmKeyword
 		template.commentReplyText = request.commentReplyText
 		template.nonKeywordCommentReplyText = request.nonKeywordCommentReplyText
+		template.nonKeywordReplyEnabled = request.nonKeywordReplyEnabled
 
 		template.keywords.clear()
 		request.keywords.forEach { template.keywords.add(TemplateKeyword(template = template, keyword = it)) }

@@ -41,6 +41,9 @@ class Template(
 
 	@Column(name = "non_keyword_comment_reply_text", columnDefinition = "TEXT")
 	var nonKeywordCommentReplyText: String? = null,
+
+	@Column(name = "non_keyword_reply_enabled", nullable = false)
+	var nonKeywordReplyEnabled: Boolean = true,
 ) : BaseTimeEntity() {
 
 	@Id
