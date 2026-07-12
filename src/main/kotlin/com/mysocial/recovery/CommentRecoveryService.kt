@@ -77,6 +77,10 @@ class CommentRecoveryService(
 			log.info("복구 처리 생략: 비즈니스 계정 자신이 남긴 댓글 commentId={}", commentId)
 			return
 		}
+		if (detail.replies?.data?.any { it.from?.id == template.account.platformAccountId } == true) {
+			log.info("복구 처리 생략: 이미 답글을 남긴 댓글 commentId={}", commentId)
+			return
+		}
 
 		saveAndMatch(template, commentId, fromId, detail.from.username, detail.text ?: "", parseTimestamp(detail.timestamp))
 	}
@@ -147,7 +151,8 @@ class CommentRecoveryService(
 					reachedBoundary = true
 					break
 				}
-				if (item.from?.id != businessAccountId) {
+				val alreadyReplied = item.replies?.data?.any { it.from?.id == businessAccountId } ?: false
+				if (item.from?.id != businessAccountId && !alreadyReplied) {
 					result.add(item)
 				}
 			}

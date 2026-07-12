@@ -73,7 +73,7 @@ class InstagramGraphClient {
 		restClient.get()
 			.uri { builder ->
 				builder.path("/$mediaId/comments")
-					.queryParam("fields", "id,text,timestamp,from")
+					.queryParam("fields", "id,text,timestamp,from,replies{from}")
 					.queryParam("access_token", accessToken)
 				if (after != null) builder.queryParam("after", after)
 				builder.build()
@@ -86,7 +86,7 @@ class InstagramGraphClient {
 		restClient.get()
 			.uri { builder ->
 				builder.path("/$commentId")
-					.queryParam("fields", "id,text,timestamp,from")
+					.queryParam("fields", "id,text,timestamp,from,replies{from}")
 					.queryParam("access_token", accessToken)
 					.build()
 			}
