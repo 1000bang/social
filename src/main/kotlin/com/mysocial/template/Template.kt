@@ -44,6 +44,9 @@ class Template(
 
 	@Column(name = "non_keyword_reply_enabled", nullable = false)
 	var nonKeywordReplyEnabled: Boolean = true,
+
+	@Column(name = "active_yn", nullable = false)
+	var activeYn: Boolean = true,
 ) : BaseTimeEntity() {
 
 	@Id

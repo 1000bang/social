@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent, type MouseEvent } from "react";
 import { api } from "../api/client";
 import { Pagination } from "../components/Pagination";
 import type {
@@ -247,6 +247,17 @@ export function TemplatesPage() {
 		}
 	};
 
+	const handleToggleActive = async (e: MouseEvent, t: TemplateResponse) => {
+		e.stopPropagation();
+		if (t.activeYn && !window.confirm("이 템플릿 사용을 중지하시겠습니까?")) return;
+		try {
+			const updated = await api.updateTemplateActiveYn(t.id, !t.activeYn);
+			setTemplates((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+		} catch (err) {
+			alert(err instanceof Error ? err.message : "사용 여부 변경에 실패했습니다");
+		}
+	};
+
 	const renderMessageEditor = (label: string, list: MessageInput[], setList: (v: MessageInput[]) => void, keyPrefix: string) => (
 		<fieldset className="message-fieldset">
 			<legend>
@@ -468,6 +479,7 @@ export function TemplatesPage() {
 								<th>키워드</th>
 								<th className="hide-mobile">DM 키워드</th>
 								<th className="hide-mobile">발송 시각</th>
+								<th>사용여부</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -478,6 +490,15 @@ export function TemplatesPage() {
 									<td>{t.keywords.join(", ") || "-"}</td>
 									<td className="hide-mobile">{t.dmKeyword ?? "-"}</td>
 									<td className="hide-mobile">{t.dispatchTime ?? "즉시"}</td>
+									<td>
+										<button
+											type="button"
+											className={t.activeYn ? "danger-button" : "primary-button"}
+											onClick={(e) => handleToggleActive(e, t)}
+										>
+											{t.activeYn ? "사용 중지" : "사용"}
+										</button>
+									</td>
 								</tr>
 							))}
 						</tbody>

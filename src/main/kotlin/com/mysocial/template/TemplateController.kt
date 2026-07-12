@@ -50,6 +50,13 @@ class TemplateController(
 		@RequestBody request: CreateTemplateRequest,
 	): TemplateResponse = TemplateResponse.from(templateService.update(accountId, id, request))
 
+	@PutMapping("/{id}/active-yn")
+	fun updateActiveYn(
+		@RequestAttribute(CURRENT_ACCOUNT_ID_ATTRIBUTE) accountId: Long,
+		@PathVariable id: Long,
+		@RequestBody request: UpdateActiveYnRequest,
+	): TemplateResponse = templateService.updateActiveYn(accountId, id, request.activeYn)
+
 	@DeleteMapping("/{id}")
 	fun delete(
 		@RequestAttribute(CURRENT_ACCOUNT_ID_ATTRIBUTE) accountId: Long,

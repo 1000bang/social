@@ -7,6 +7,7 @@ import { AuthCallbackPage } from "./pages/AuthCallbackPage";
 import { TemplatesPage } from "./pages/TemplatesPage";
 import { SendLogsPage } from "./pages/SendLogsPage";
 import { SettingsPage } from "./pages/SettingsPage";
+import { RecoveryPage } from "./pages/RecoveryPage";
 
 export function App() {
 	return (
@@ -19,6 +20,7 @@ export function App() {
 						<Route path="/templates" element={<TemplatesPage />} />
 						<Route path="/send-logs" element={<SendLogsPage />} />
 						<Route path="/settings" element={<SettingsPage />} />
+						<Route path="/recovery" element={<RecoveryPage />} />
 					</Route>
 				</Route>
 				<Route path="*" element={<Navigate to="/templates" replace />} />

@@ -49,6 +49,7 @@ export interface TemplateResponse {
 	commentReplyText: string | null;
 	nonKeywordCommentReplyText: string | null;
 	nonKeywordReplyEnabled: boolean;
+	activeYn: boolean;
 	createdAt: string;
 }
 
@@ -62,6 +63,7 @@ export interface TemplateDetailResponse {
 	commentReplyText: string | null;
 	nonKeywordCommentReplyText: string | null;
 	nonKeywordReplyEnabled: boolean;
+	activeYn: boolean;
 	followerMessages: MessageInput[];
 	nonFollowerMessages: MessageInput[];
 	createdAt: string;
@@ -125,4 +127,19 @@ export interface UpdateAccountSettingsRequest {
 	nonFollowerMessageText?: string | null;
 	postPickerLimit: number;
 	maxMessagesPerAudience: number;
+}
+
+export interface RecoveryCommentResponse {
+	commentId: string;
+	authorUsername: string | null;
+	text: string;
+	timestamp: string;
+}
+
+export interface RecoveryCardResponse {
+	postId: number;
+	templateId: number;
+	templateName: string;
+	thumbnailUrl: string | null;
+	comments: RecoveryCommentResponse[];
 }

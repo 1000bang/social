@@ -56,4 +56,40 @@ class InstagramGraphClient {
 			.retrieve()
 			.body(InstagramMediaListResponse::class.java)
 			?: InstagramMediaListResponse()
+
+	fun getMediaThumbnail(accessToken: String, mediaId: String): String? =
+		restClient.get()
+			.uri { builder ->
+				builder.path("/$mediaId")
+					.queryParam("fields", "thumbnail_url,media_url")
+					.queryParam("access_token", accessToken)
+					.build()
+			}
+			.retrieve()
+			.body(InstagramMediaItem::class.java)
+			?.let { it.thumbnailUrl ?: it.mediaUrl }
+
+	fun listComments(accessToken: String, mediaId: String, after: String? = null): InstagramCommentsPageResponse =
+		restClient.get()
+			.uri { builder ->
+				builder.path("/$mediaId/comments")
+					.queryParam("fields", "id,text,timestamp,from")
+					.queryParam("access_token", accessToken)
+				if (after != null) builder.queryParam("after", after)
+				builder.build()
+			}
+			.retrieve()
+			.body(InstagramCommentsPageResponse::class.java)
+			?: InstagramCommentsPageResponse()
+
+	fun getComment(accessToken: String, commentId: String): InstagramCommentItem? =
+		restClient.get()
+			.uri { builder ->
+				builder.path("/$commentId")
+					.queryParam("fields", "id,text,timestamp,from")
+					.queryParam("access_token", accessToken)
+					.build()
+			}
+			.retrieve()
+			.body(InstagramCommentItem::class.java)
 }

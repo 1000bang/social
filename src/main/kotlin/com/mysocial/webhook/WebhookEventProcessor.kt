@@ -17,6 +17,7 @@ import com.mysocial.message.DmThreadRepository
 import com.mysocial.message.MessageDirection
 import com.mysocial.post.Post
 import com.mysocial.post.PostRepository
+import com.mysocial.template.TemplateRepository
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
@@ -35,6 +36,7 @@ class WebhookEventProcessor(
 	private val commentTemplateMatcher: CommentTemplateMatcher,
 	private val dmKeywordMatcher: DmKeywordMatcher,
 	private val dispatchExecutor: DispatchExecutor,
+	private val templateRepository: TemplateRepository,
 ) {
 	private val log = LoggerFactory.getLogger(javaClass)
 
@@ -111,6 +113,14 @@ class WebhookEventProcessor(
 
 		val post = postRepository.findByAccountIdAndPlatformPostId(account.id, mediaId)
 			?: postRepository.save(Post(account = account, platformPostId = mediaId))
+
+		val template = templateRepository.findByPostId(post.id).firstOrNull()
+		if (template != null && !template.activeYn) {
+			// 사용 중지된 템플릿은 댓글을 기록하지 않고 그대로 건너뛴다.
+			// 나중에 다시 사용으로 전환하면 "미처리 대응" 화면에서 이 기간의 댓글을 그대로 확인할 수 있다.
+			log.info("댓글 웹훅 무시: 템플릿이 사용 중지 상태 templateId={}, commentId={}", template.id, value.id)
+			return
+		}
 
 		commentRepository.save(
 			Comment(

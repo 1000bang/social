@@ -104,6 +104,15 @@ class TemplateService(
 	}
 
 	@Transactional
+	fun updateActiveYn(accountId: Long, id: Long, activeYn: Boolean): TemplateResponse {
+		val template = templateRepository.findById(id).orElseThrow { TemplateNotFoundException(id) }
+		if (template.account.id != accountId) throw TemplateNotFoundException(id)
+
+		template.activeYn = activeYn
+		return TemplateResponse.from(templateRepository.save(template))
+	}
+
+	@Transactional
 	fun delete(accountId: Long, id: Long) {
 		val template = templateRepository.findById(id).orElseThrow { TemplateNotFoundException(id) }
 		if (template.account.id != accountId) throw TemplateNotFoundException(id)

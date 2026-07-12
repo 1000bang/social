@@ -6,6 +6,7 @@ import type {
 	MediaUploadResponse,
 	PageResponse,
 	PostResponse,
+	RecoveryCardResponse,
 	SendLogResponse,
 	SendLogSummaryResponse,
 	TemplateDetailResponse,
@@ -62,6 +63,11 @@ export const api = {
 	updateTemplate: (id: number, body: CreateTemplateRequest) =>
 		request<TemplateResponse>(`/api/templates/${id}`, { method: "PUT", body: JSON.stringify(body) }),
 	deleteTemplate: (id: number) => request<void>(`/api/templates/${id}`, { method: "DELETE" }),
+	updateTemplateActiveYn: (id: number, activeYn: boolean) =>
+		request<TemplateResponse>(`/api/templates/${id}/active-yn`, {
+			method: "PUT",
+			body: JSON.stringify({ activeYn }),
+		}),
 	listSendLogs: (page = 0, size = 10) =>
 		request<PageResponse<SendLogResponse>>(`/api/send-logs?page=${page}&size=${size}`),
 	getSendLogSummary: () => request<SendLogSummaryResponse>("/api/send-logs/summary"),
@@ -77,4 +83,9 @@ export const api = {
 	getSettings: () => request<AccountSettingsResponse>("/api/settings"),
 	updateSettings: (body: UpdateAccountSettingsRequest) =>
 		request<AccountSettingsResponse>("/api/settings", { method: "PUT", body: JSON.stringify(body) }),
+	getRecoveryCards: () => request<RecoveryCardResponse[]>("/api/recovery/cards"),
+	processRecoveryComment: (postId: number, commentId: string) =>
+		request<void>(`/api/recovery/posts/${postId}/comments/${commentId}/process`, { method: "POST" }),
+	processRecoveryPostAll: (postId: number) =>
+		request<void>(`/api/recovery/posts/${postId}/process-all`, { method: "POST" }),
 };

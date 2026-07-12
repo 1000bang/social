@@ -41,6 +41,7 @@ data class TemplateResponse(
 	val commentReplyText: String?,
 	val nonKeywordCommentReplyText: String?,
 	val nonKeywordReplyEnabled: Boolean,
+	val activeYn: Boolean,
 	val createdAt: Instant,
 ) {
 	companion object {
@@ -54,10 +55,15 @@ data class TemplateResponse(
 			commentReplyText = template.commentReplyText,
 			nonKeywordCommentReplyText = template.nonKeywordCommentReplyText,
 			nonKeywordReplyEnabled = template.nonKeywordReplyEnabled,
+			activeYn = template.activeYn,
 			createdAt = template.createdAt,
 		)
 	}
 }
+
+data class UpdateActiveYnRequest(
+	val activeYn: Boolean,
+)
 
 data class TemplateDetailResponse(
 	val id: Long,
@@ -69,6 +75,7 @@ data class TemplateDetailResponse(
 	val commentReplyText: String?,
 	val nonKeywordCommentReplyText: String?,
 	val nonKeywordReplyEnabled: Boolean,
+	val activeYn: Boolean,
 	val followerMessages: List<MessageInput>,
 	val nonFollowerMessages: List<MessageInput>,
 	val createdAt: Instant,
@@ -84,6 +91,7 @@ data class TemplateDetailResponse(
 			commentReplyText = template.commentReplyText,
 			nonKeywordCommentReplyText = template.nonKeywordCommentReplyText,
 			nonKeywordReplyEnabled = template.nonKeywordReplyEnabled,
+			activeYn = template.activeYn,
 			followerMessages = toMessageInputs(template, AudienceType.FOLLOWER),
 			nonFollowerMessages = toMessageInputs(template, AudienceType.NON_FOLLOWER),
 			createdAt = template.createdAt,
