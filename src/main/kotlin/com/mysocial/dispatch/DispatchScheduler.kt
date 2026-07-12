@@ -21,7 +21,7 @@ class DispatchScheduler(
 	@Transactional(readOnly = true)
 	fun dispatchScheduledTemplates() {
 		val now = LocalTime.now(ZoneId.of("Asia/Seoul")).withSecond(0).withNano(0)
-		val templates = templateRepository.findByDispatchTime(now)
+		val templates = templateRepository.findByDispatchTime(now).filter { it.activeYn }
 		if (templates.isEmpty()) return
 
 		log.info("예약 발송 스케줄러 실행: dispatchTime={}, templateIds={}", now, templates.map { it.id })

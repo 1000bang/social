@@ -15,6 +15,7 @@ class DmKeywordMatcher(
 	fun match(accountId: Long, messagePlatformId: String, senderPlatformUserId: String, messageText: String) {
 		log.info("DM 키워드 매칭 진입: accountId={}, messageId={}, senderId={}", accountId, messagePlatformId, senderPlatformUserId)
 		val matchedTemplates = templateRepository.findByAccountIdAndDmKeywordIsNotNull(accountId)
+			.filter { it.activeYn }
 			.filter { template -> template.dmKeyword?.let { messageText.contains(it, ignoreCase = true) } ?: false }
 		log.info("DM 키워드 매칭 결과: accountId={}, matchedTemplateIds={}", accountId, matchedTemplates.map { it.id })
 
