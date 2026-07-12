@@ -247,7 +247,8 @@ export function TemplatesPage() {
 		}
 	};
 
-	const handleToggleActive = async (e: MouseEvent, t: TemplateResponse) => {
+	const handleToggleActive = async (e: MouseEvent<HTMLInputElement>, t: TemplateResponse) => {
+		e.preventDefault();
 		e.stopPropagation();
 		if (t.activeYn && !window.confirm("이 템플릿 사용을 중지하시겠습니까?")) return;
 		try {
@@ -491,13 +492,10 @@ export function TemplatesPage() {
 									<td className="hide-mobile">{t.dmKeyword ?? "-"}</td>
 									<td className="hide-mobile">{t.dispatchTime ?? "즉시"}</td>
 									<td>
-										<button
-											type="button"
-											className={t.activeYn ? "danger-button" : "primary-button"}
-											onClick={(e) => handleToggleActive(e, t)}
-										>
-											{t.activeYn ? "사용 중지" : "사용"}
-										</button>
+										<label className="toggle-switch">
+											<input type="checkbox" checked={t.activeYn} onClick={(e) => handleToggleActive(e, t)} readOnly />
+											<span className="toggle-slider" />
+										</label>
 									</td>
 								</tr>
 							))}

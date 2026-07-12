@@ -19,11 +19,11 @@ export function Layout() {
 					<NavLink to="/send-logs" className={navClass}>
 						발송 통계
 					</NavLink>
-					<NavLink to="/settings" className={navClass}>
-						환경설정
-					</NavLink>
 					<NavLink to="/recovery" className={navClass}>
 						미처리 대응
+					</NavLink>
+					<NavLink to="/settings" className={navClass}>
+						환경설정
 					</NavLink>
 				</div>
 				<button className="logout-button" onClick={logout}>
@@ -39,11 +39,11 @@ export function Layout() {
 					<NavLink to="/send-logs" className={navClass} onClick={() => setMenuOpen(false)}>
 						발송 통계
 					</NavLink>
-					<NavLink to="/settings" className={navClass} onClick={() => setMenuOpen(false)}>
-						환경설정
-					</NavLink>
 					<NavLink to="/recovery" className={navClass} onClick={() => setMenuOpen(false)}>
 						미처리 대응
+					</NavLink>
+					<NavLink to="/settings" className={navClass} onClick={() => setMenuOpen(false)}>
+						환경설정
 					</NavLink>
 					<button
 						onClick={() => {
