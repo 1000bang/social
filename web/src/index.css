@@ -63,21 +63,15 @@ textarea {
 	padding: 0 20px;
 }
 
-.centered-page button,
-.centered-page a {
-	display: inline-block;
+.centered-page button {
 	background: var(--accent);
 	color: #fff;
 	border: none;
 	padding: 10px 24px;
 	font-weight: 600;
-	border-radius: 6px;
-	text-decoration: none;
-	cursor: pointer;
 }
 
-.centered-page button:hover,
-.centered-page a:hover {
+.centered-page button:hover {
 	background: var(--accent-hover);
 }
 

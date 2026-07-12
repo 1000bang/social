@@ -53,6 +53,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 }
 
 export const api = {
+	getLoginUrl: () => request<{ url: string }>("/api/auth/instagram/login-url"),
 	listTemplates: (page = 0, size = 10) =>
 		request<PageResponse<TemplateResponse>>(`/api/templates?page=${page}&size=${size}`),
 	createTemplate: (body: CreateTemplateRequest) =>
