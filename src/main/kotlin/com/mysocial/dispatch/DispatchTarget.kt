@@ -59,6 +59,11 @@ class DispatchTarget(
 		processedAt = at
 	}
 
+	fun markNonFollowerSent(at: Instant) {
+		status = DispatchStatus.NON_FOLLOWER_SENT
+		processedAt = at
+	}
+
 	fun markFailed(at: Instant) {
 		status = DispatchStatus.FAILED
 		processedAt = at

@@ -108,7 +108,8 @@ class DispatchExecutor(
 			log.warn("팔로우 확인 버튼 처리 불가: dispatchTarget을 찾을 수 없음 dispatchTargetId={}", dispatchTargetId)
 			return
 		}
-		if (target.status != DispatchStatus.AWAITING_FOLLOW_CHECK) {
+		// 논팔로워로 처리된 뒤에도 버튼을 다시 누르면 팔로우 여부를 재확인해서, 그사이 팔로우했다면 팔로워 메시지를 마저 보낸다.
+		if (target.status != DispatchStatus.AWAITING_FOLLOW_CHECK && target.status != DispatchStatus.NON_FOLLOWER_SENT) {
 			log.warn("팔로우 확인 버튼 처리 불가: 대기 상태가 아님 dispatchTargetId={}, status={}", dispatchTargetId, target.status)
 			return
 		}
@@ -123,18 +124,27 @@ class DispatchExecutor(
 			val profile = instagramGraphClient.getUserProfile(token, senderPsid)
 			val username = profile["username"] as? String
 			val isFollowing = profile["is_user_follow_business"] as? Boolean ?: false
-			val audienceType = if (isFollowing) AudienceType.FOLLOWER else AudienceType.NON_FOLLOWER
 			log.info(
-				"팔로우 여부 확인 결과: dispatchTargetId={}, senderPsid={}, isFollowing={}, audienceType={}",
+				"팔로우 여부 확인 결과: dispatchTargetId={}, senderPsid={}, isFollowing={}, previousStatus={}",
 				dispatchTargetId,
 				senderPsid,
 				isFollowing,
-				audienceType,
+				target.status,
 			)
 
+			if (target.status == DispatchStatus.NON_FOLLOWER_SENT && !isFollowing) {
+				log.info("팔로우 확인 재클릭: 여전히 팔로우하지 않음, 처리 생략 dispatchTargetId={}", dispatchTargetId)
+				return@runCatching
+			}
+
+			val audienceType = if (isFollowing) AudienceType.FOLLOWER else AudienceType.NON_FOLLOWER
 			sendAudienceMessages(template, audienceType, token, senderPsid)
 
-			target.markSent(Instant.now())
+			if (audienceType == AudienceType.FOLLOWER) {
+				target.markSent(Instant.now())
+			} else {
+				target.markNonFollowerSent(Instant.now())
+			}
 			sendLogRepository.save(
 				SendLog(
 					template = template,
