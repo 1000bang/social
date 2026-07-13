@@ -31,6 +31,7 @@ class TemplateService(
 			"논팔로워 메시지는 최대 ${maxMessages}개까지 설정 가능합니다"
 		}
 		ensurePostNotTaken(request.postId)
+		ensureDmKeywordNotTaken(accountId, request.dmKeyword)
 
 		val account = accountRepository.findById(accountId)
 			.orElseThrow { IllegalArgumentException("계정을 찾을 수 없습니다: $accountId") }
@@ -81,6 +82,7 @@ class TemplateService(
 		val template = templateRepository.findById(id).orElseThrow { TemplateNotFoundException(id) }
 		if (template.account.id != accountId) throw TemplateNotFoundException(id)
 		ensurePostNotTaken(request.postId, excludeTemplateId = id)
+		ensureDmKeywordNotTaken(accountId, request.dmKeyword, excludeTemplateId = id)
 
 		val post = postRepository.findById(request.postId)
 			.orElseThrow { IllegalArgumentException("게시물을 찾을 수 없습니다: ${request.postId}") }
@@ -129,6 +131,16 @@ class TemplateService(
 			templateRepository.existsByPostId(postId)
 		}
 		require(!taken) { "이미 다른 템플릿에 연결된 게시물입니다. 게시물당 하나의 템플릿만 등록할 수 있습니다" }
+	}
+
+	private fun ensureDmKeywordNotTaken(accountId: Long, dmKeyword: String?, excludeTemplateId: Long? = null) {
+		if (dmKeyword.isNullOrBlank()) return
+		val taken = if (excludeTemplateId != null) {
+			templateRepository.existsByAccountIdAndDmKeywordIgnoreCaseAndIdNot(accountId, dmKeyword, excludeTemplateId)
+		} else {
+			templateRepository.existsByAccountIdAndDmKeywordIgnoreCase(accountId, dmKeyword)
+		}
+		require(!taken) { "이미 다른 템플릿에 등록된 DM 키워드입니다: $dmKeyword" }
 	}
 
 	private fun addMessages(template: Template, audienceType: AudienceType, inputs: List<MessageInput>) {

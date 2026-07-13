@@ -19,11 +19,22 @@ class DmKeywordMatcher(
 			.filter { template -> template.dmKeyword?.let { messageText.contains(it, ignoreCase = true) } ?: false }
 		log.info("DM 키워드 매칭 결과: accountId={}, matchedTemplateIds={}", accountId, matchedTemplates.map { it.id })
 
-		matchedTemplates.forEach { template ->
-			val target = dispatchTargetEnqueuer.enqueue(template, TriggerType.DM_KEYWORD, messagePlatformId, senderPlatformUserId)
-			if (target != null && template.dispatchTime == null) {
-				dispatchExecutor.sendInitialPrompt(target.id)
-			}
+		if (matchedTemplates.isEmpty()) return
+
+		// DM 키워드 중복 등록은 생성/수정 시 막고 있지만, 그 이전에 만들어진 중복 데이터가 남아있을 수 있어 방어적으로 최신 템플릿 하나만 사용한다.
+		val template = matchedTemplates.maxBy { it.createdAt }
+		if (matchedTemplates.size > 1) {
+			log.warn(
+				"DM 키워드가 여러 템플릿에 중복 등록되어 있습니다. 가장 최근 템플릿(id={})만 사용합니다: accountId={}, templateIds={}",
+				template.id,
+				accountId,
+				matchedTemplates.map { it.id },
+			)
+		}
+
+		val target = dispatchTargetEnqueuer.enqueue(template, TriggerType.DM_KEYWORD, messagePlatformId, senderPlatformUserId)
+		if (target != null && template.dispatchTime == null) {
+			dispatchExecutor.sendInitialPrompt(target.id)
 		}
 	}
 }

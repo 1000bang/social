@@ -13,4 +13,6 @@ interface TemplateRepository : JpaRepository<Template, Long> {
 	fun findByDispatchTime(dispatchTime: LocalTime): List<Template>
 	fun existsByPostId(postId: Long): Boolean
 	fun existsByPostIdAndIdNot(postId: Long, id: Long): Boolean
+	fun existsByAccountIdAndDmKeywordIgnoreCase(accountId: Long, dmKeyword: String): Boolean
+	fun existsByAccountIdAndDmKeywordIgnoreCaseAndIdNot(accountId: Long, dmKeyword: String, id: Long): Boolean
 }
