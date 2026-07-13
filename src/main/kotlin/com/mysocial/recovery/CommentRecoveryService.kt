@@ -33,8 +33,7 @@ class CommentRecoveryService(
 
 		return templates.mapNotNull { template ->
 			val post = template.post
-			val since = boundaryFor(template)
-			val comments = fetchNewComments(token, post.platformPostId, since, template.account.platformAccountId)
+			val comments = fetchUnrepliedComments(token, post.platformPostId, template.account.platformAccountId)
 			if (comments.isEmpty()) return@mapNotNull null
 
 			val thumbnailUrl = runCatching { instagramGraphClient.getMediaThumbnail(token, post.platformPostId) }.getOrNull()
@@ -89,9 +88,8 @@ class CommentRecoveryService(
 	fun processAllForPost(accountId: Long, postId: Long) {
 		val template = templateForPost(accountId, postId)
 		val token = latestToken(accountId) ?: throw IllegalArgumentException("유효한 액세스 토큰이 없습니다")
-		val since = boundaryFor(template)
 
-		val comments = fetchNewComments(token, template.post.platformPostId, since, template.account.platformAccountId)
+		val comments = fetchUnrepliedComments(token, template.post.platformPostId, template.account.platformAccountId)
 			.sortedBy { parseTimestamp(it.timestamp) ?: Instant.EPOCH }
 
 		log.info("일괄 복구 처리 시작: templateId={}, count={}", template.id, comments.size)
@@ -130,12 +128,9 @@ class CommentRecoveryService(
 		return template
 	}
 
-	private fun boundaryFor(template: Template): Instant =
-		commentRepository.findTopByPostIdOrderByPublishedAtDesc(template.post.id)?.publishedAt ?: template.createdAt
-
-	// 마지막으로 처리된 댓글 시각(since)보다 최신인 댓글만 최신순으로 페이지를 넘겨가며 수집한다.
-	// since보다 오래된 댓글에 도달하면 그 이전은 이미 처리됐거나 시스템 도입 전 댓글이므로 중단한다.
-	private fun fetchNewComments(token: String, mediaId: String, since: Instant, businessAccountId: String): List<InstagramCommentItem> {
+	// 게시물의 댓글을 페이지 끝까지 훑어, 비즈니스 계정이 아직 답글을 남기지 않은 댓글만 모은다.
+	// Graph API에 "답글 없는 댓글만" 서버 필터가 없어 전체를 훑어야 하므로, MAX_PAGES로 최악의 경우를 방어한다.
+	private fun fetchUnrepliedComments(token: String, mediaId: String, businessAccountId: String): List<InstagramCommentItem> {
 		val result = mutableListOf<InstagramCommentItem>()
 		var after: String? = null
 		var page = 0
@@ -144,19 +139,12 @@ class CommentRecoveryService(
 			val response = instagramGraphClient.listComments(token, mediaId, after)
 			if (response.data.isEmpty()) break
 
-			var reachedBoundary = false
 			for (item in response.data) {
-				val ts = parseTimestamp(item.timestamp)
-				if (ts == null || !ts.isAfter(since)) {
-					reachedBoundary = true
-					break
-				}
 				val alreadyReplied = item.replies?.data?.any { it.from?.id == businessAccountId } ?: false
 				if (item.from?.id != businessAccountId && !alreadyReplied) {
 					result.add(item)
 				}
 			}
-			if (reachedBoundary) break
 
 			after = response.paging?.cursors?.after ?: break
 			page++
