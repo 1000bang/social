@@ -88,7 +88,7 @@ class InstagramGraphClient {
 			.uri(
 				encodedFieldsUri(
 					"/$mediaId/comments",
-					"id,text,timestamp,from,replies%7Bfrom%7D",
+					"id,text,timestamp,from,replies%7Bfrom%7Bid,username%7D%7D",
 					accessToken,
 					if (after != null) mapOf("after" to after) else emptyMap(),
 				),
@@ -99,7 +99,7 @@ class InstagramGraphClient {
 
 	fun getComment(accessToken: String, commentId: String): InstagramCommentItem? =
 		restClient.get()
-			.uri(encodedFieldsUri("/$commentId", "id,text,timestamp,from,replies%7Bfrom%7D", accessToken))
+			.uri(encodedFieldsUri("/$commentId", "id,text,timestamp,from,replies%7Bfrom%7Bid,username%7D%7D", accessToken))
 			.retrieve()
 			.body(InstagramCommentItem::class.java)
 }
