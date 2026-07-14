@@ -2,26 +2,12 @@ package com.mysocial.instagram
 
 import org.springframework.stereotype.Component
 import org.springframework.web.client.RestClient
-import org.springframework.web.util.UriUtils
-import java.net.URI
-import java.nio.charset.StandardCharsets
 
 const val WEBHOOK_SUBSCRIBED_FIELDS = "comments,messages,messaging_postbacks"
-private const val GRAPH_BASE_URL = "https://graph.instagram.com/v21.0"
 
 @Component
 class InstagramGraphClient {
-	private val restClient = RestClient.create(GRAPH_BASE_URL)
-
-	// 댓글 답글(replies) 중첩 필드는 {}를 포함하는데, UriComponentsBuilder의 queryParam()을 거치면
-	// {from}이 URI 템플릿 변수로 오인되거나(퍼센트 인코딩 시) 이중 인코딩되므로, 이 URI만 직접 조립한다.
-	private fun encodedFieldsUri(path: String, fields: String, accessToken: String, extraParams: Map<String, String> = emptyMap()): URI {
-		val encodedToken = UriUtils.encodeQueryParam(accessToken, StandardCharsets.UTF_8)
-		val extra = extraParams.entries.joinToString("") { (key, value) ->
-			"&$key=${UriUtils.encodeQueryParam(value, StandardCharsets.UTF_8)}"
-		}
-		return URI.create("$GRAPH_BASE_URL$path?fields=$fields&access_token=$encodedToken$extra")
-	}
+	private val restClient = RestClient.create("https://graph.instagram.com/v21.0")
 
 	fun getUserProfile(accessToken: String, targetUserId: String): Map<*, *> =
 		restClient.get()
@@ -85,21 +71,39 @@ class InstagramGraphClient {
 
 	fun listComments(accessToken: String, mediaId: String, after: String? = null): InstagramCommentsPageResponse =
 		restClient.get()
-			.uri(
-				encodedFieldsUri(
-					"/$mediaId/comments",
-					"id,text,timestamp,from,replies%7Bfrom%7Bid,username%7D%7D",
-					accessToken,
-					if (after != null) mapOf("after" to after) else emptyMap(),
-				),
-			)
+			.uri { builder ->
+				builder.path("/$mediaId/comments")
+					.queryParam("fields", "id,text,timestamp,from")
+					.queryParam("access_token", accessToken)
+				if (after != null) builder.queryParam("after", after)
+				builder.build()
+			}
 			.retrieve()
 			.body(InstagramCommentsPageResponse::class.java)
 			?: InstagramCommentsPageResponse()
 
 	fun getComment(accessToken: String, commentId: String): InstagramCommentItem? =
 		restClient.get()
-			.uri(encodedFieldsUri("/$commentId", "id,text,timestamp,from,replies%7Bfrom%7Bid,username%7D%7D", accessToken))
+			.uri { builder ->
+				builder.path("/$commentId")
+					.queryParam("fields", "id,text,timestamp,from")
+					.queryParam("access_token", accessToken)
+					.build()
+			}
 			.retrieve()
 			.body(InstagramCommentItem::class.java)
+
+	// Instagram Graph API는 comments 목록 조회 시 replies{from} 같은 중첩 필드 확장을 지원하지 않아
+	// (from이 항상 비어서 내려옴), 답글은 댓글별로 별도 엔드포인트를 호출해 확인한다.
+	fun listReplies(accessToken: String, commentId: String): InstagramCommentsPageResponse =
+		restClient.get()
+			.uri { builder ->
+				builder.path("/$commentId/replies")
+					.queryParam("fields", "id,from")
+					.queryParam("access_token", accessToken)
+					.build()
+			}
+			.retrieve()
+			.body(InstagramCommentsPageResponse::class.java)
+			?: InstagramCommentsPageResponse()
 }

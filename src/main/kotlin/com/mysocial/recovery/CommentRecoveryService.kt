@@ -1,6 +1,7 @@
 package com.mysocial.recovery
 
 import com.mysocial.account.AccessTokenRepository
+import com.mysocial.account.AccountRepository
 import com.mysocial.account.TokenRefreshStatus
 import com.mysocial.comment.Comment
 import com.mysocial.comment.CommentRepository
@@ -17,9 +18,12 @@ import java.time.format.DateTimeFormatter
 
 @Service
 class CommentRecoveryService(
+	private val accountRepository: AccountRepository,
 	private val templateRepository: TemplateRepository,
 	private val commentRepository: CommentRepository,
 	private val accessTokenRepository: AccessTokenRepository,
+	private val recoveryCheckpointRepository: RecoveryCheckpointRepository,
+	private val unprocessedCommentRepository: UnprocessedCommentRepository,
 	private val instagramGraphClient: InstagramGraphClient,
 	private val commentTemplateMatcher: CommentTemplateMatcher,
 ) {
@@ -30,30 +34,45 @@ class CommentRecoveryService(
 		val token = latestToken(accountId) ?: return emptyList()
 		// 사용 중지된 템플릿은 의도적으로 꺼둔 것이므로 다시 사용으로 전환하기 전까지는 카드에 노출하지 않는다.
 		val templates = templateRepository.findAllByAccountId(accountId).filter { it.activeYn }
+		val checkpoint = recoveryCheckpointRepository.findByAccountId(accountId)?.lastCheckedAt
 
 		return templates.mapNotNull { template ->
-			val post = template.post
-			val comments = fetchUnrepliedComments(token, post.platformPostId, template.account.platformAccountId)
+			val archived = unprocessedCommentRepository.findByTemplateId(template.id)
+			val archivedIds = archived.map { it.platformCommentId }.toSet()
+
+			val live = if (checkpoint != null) {
+				fetchUnrepliedComments(token, template.post.platformPostId, template.account.platformAccountId, checkpoint)
+					.filter { it.id !in archivedIds }
+			} else {
+				emptyList()
+			}
+
+			val comments = archived.map {
+				RecoveryCommentResponse(
+					commentId = it.platformCommentId,
+					authorUsername = it.authorUsername,
+					text = it.text,
+					timestamp = it.publishedAt,
+				)
+			} + live.mapNotNull { item ->
+				val ts = parseTimestamp(item.timestamp) ?: return@mapNotNull null
+				RecoveryCommentResponse(
+					commentId = item.id,
+					authorUsername = item.from?.username,
+					text = item.text ?: "",
+					timestamp = ts,
+				)
+			}
 			if (comments.isEmpty()) return@mapNotNull null
 
-			val thumbnailUrl = runCatching { instagramGraphClient.getMediaThumbnail(token, post.platformPostId) }.getOrNull()
+			val thumbnailUrl = runCatching { instagramGraphClient.getMediaThumbnail(token, template.post.platformPostId) }.getOrNull()
 
 			RecoveryCardResponse(
-				postId = post.id,
+				postId = template.post.id,
 				templateId = template.id,
 				templateName = template.name,
 				thumbnailUrl = thumbnailUrl,
-				comments = comments
-					.sortedByDescending { parseTimestamp(it.timestamp) ?: Instant.EPOCH }
-					.mapNotNull { item ->
-						val ts = parseTimestamp(item.timestamp) ?: return@mapNotNull null
-						RecoveryCommentResponse(
-							commentId = item.id,
-							authorUsername = item.from?.username,
-							text = item.text ?: "",
-							timestamp = ts,
-						)
-					},
+				comments = comments.sortedByDescending { it.timestamp },
 			)
 		}
 	}
@@ -63,6 +82,14 @@ class CommentRecoveryService(
 		val template = templateForPost(accountId, postId)
 		if (commentRepository.existsByPlatformCommentId(commentId)) {
 			log.info("복구 처리 생략: 이미 처리된 댓글 commentId={}", commentId)
+			unprocessedCommentRepository.deleteByTemplateIdAndPlatformCommentId(template.id, commentId)
+			return
+		}
+
+		val archived = unprocessedCommentRepository.findByTemplateId(template.id).find { it.platformCommentId == commentId }
+		if (archived != null) {
+			saveAndMatch(template, archived.platformCommentId, archived.authorPlatformUserId, archived.authorUsername, archived.text, archived.publishedAt)
+			unprocessedCommentRepository.delete(archived)
 			return
 		}
 
@@ -76,7 +103,7 @@ class CommentRecoveryService(
 			log.info("복구 처리 생략: 비즈니스 계정 자신이 남긴 댓글 commentId={}", commentId)
 			return
 		}
-		if (detail.replies?.data?.any { it.from?.id == template.account.platformAccountId } == true) {
+		if (hasBusinessReply(token, commentId, template.account.platformAccountId)) {
 			log.info("복구 처리 생략: 이미 답글을 남긴 댓글 commentId={}", commentId)
 			return
 		}
@@ -89,15 +116,62 @@ class CommentRecoveryService(
 		val template = templateForPost(accountId, postId)
 		val token = latestToken(accountId) ?: throw IllegalArgumentException("유효한 액세스 토큰이 없습니다")
 
-		val comments = fetchUnrepliedComments(token, template.post.platformPostId, template.account.platformAccountId)
-			.sortedBy { parseTimestamp(it.timestamp) ?: Instant.EPOCH }
-
-		log.info("일괄 복구 처리 시작: templateId={}, count={}", template.id, comments.size)
-		comments.forEach { item ->
-			val fromId = item.from?.id ?: return@forEach
-			if (commentRepository.existsByPlatformCommentId(item.id)) return@forEach
-			saveAndMatch(template, item.id, fromId, item.from.username, item.text ?: "", parseTimestamp(item.timestamp))
+		val archived = unprocessedCommentRepository.findByTemplateId(template.id).sortedBy { it.publishedAt }
+		log.info("일괄 복구 처리 시작(저장된 백로그): templateId={}, count={}", template.id, archived.size)
+		archived.forEach { item ->
+			if (!commentRepository.existsByPlatformCommentId(item.platformCommentId)) {
+				saveAndMatch(template, item.platformCommentId, item.authorPlatformUserId, item.authorUsername, item.text, item.publishedAt)
+			}
+			unprocessedCommentRepository.delete(item)
 		}
+
+		val checkpoint = recoveryCheckpointRepository.findByAccountId(accountId)?.lastCheckedAt
+		if (checkpoint != null) {
+			val liveComments = fetchUnrepliedComments(token, template.post.platformPostId, template.account.platformAccountId, checkpoint)
+				.sortedBy { parseTimestamp(it.timestamp) ?: Instant.EPOCH }
+			log.info("일괄 복구 처리 시작(실시간 구간): templateId={}, count={}", template.id, liveComments.size)
+			liveComments.forEach { item ->
+				val fromId = item.from?.id ?: return@forEach
+				if (commentRepository.existsByPlatformCommentId(item.id)) return@forEach
+				saveAndMatch(template, item.id, fromId, item.from.username, item.text ?: "", parseTimestamp(item.timestamp))
+			}
+		}
+	}
+
+	// 체크포인트~지금 사이의 미처리 댓글을 찾아 테이블에 쌓아두고, 체크포인트를 지금 시각으로 전진시킨다.
+	// 매일 새벽 스케줄에서만 호출되며, 여기서 저장된 항목은 사용자가 처리하기 전까지 지워지지 않는다.
+	@Transactional
+	fun archiveUnprocessedComments(accountId: Long) {
+		val token = latestToken(accountId) ?: return
+		val checkpoint = recoveryCheckpointRepository.findByAccountId(accountId)
+			?: RecoveryCheckpoint(account = accountRepository.getReferenceById(accountId), lastCheckedAt = Instant.now())
+		val since = checkpoint.lastCheckedAt
+		val now = Instant.now()
+
+		val templates = templateRepository.findAllByAccountId(accountId).filter { it.activeYn }
+		templates.forEach { template ->
+			val comments = fetchUnrepliedComments(token, template.post.platformPostId, template.account.platformAccountId, since)
+			comments.forEach { item ->
+				val ts = parseTimestamp(item.timestamp) ?: return@forEach
+				val fromId = item.from?.id ?: return@forEach
+				if (!unprocessedCommentRepository.existsByTemplateIdAndPlatformCommentId(template.id, item.id)) {
+					unprocessedCommentRepository.save(
+						UnprocessedComment(
+							template = template,
+							platformCommentId = item.id,
+							authorPlatformUserId = fromId,
+							authorUsername = item.from.username,
+							text = item.text ?: "",
+							publishedAt = ts,
+						),
+					)
+				}
+			}
+		}
+
+		checkpoint.lastCheckedAt = now
+		recoveryCheckpointRepository.save(checkpoint)
+		log.info("미처리 댓글 아카이빙 완료: accountId={}, since={}, until={}", accountId, since, now)
 	}
 
 	private fun saveAndMatch(
@@ -128,9 +202,9 @@ class CommentRecoveryService(
 		return template
 	}
 
-	// 게시물의 댓글을 페이지 끝까지 훑어, 비즈니스 계정이 아직 답글을 남기지 않은 댓글만 모은다.
-	// Graph API에 "답글 없는 댓글만" 서버 필터가 없어 전체를 훑어야 하므로, MAX_PAGES로 최악의 경우를 방어한다.
-	private fun fetchUnrepliedComments(token: String, mediaId: String, businessAccountId: String): List<InstagramCommentItem> {
+	// since보다 최신인 댓글만 최신순으로 페이지를 넘겨가며 수집하고, 그중 비즈니스 계정이 아직 답글을 남기지 않은 것만 남긴다.
+	// since보다 오래된 댓글에 도달하면 그 이전은 이미 확인된 구간이므로 중단한다. (MAX_PAGES는 최악의 경우를 방어)
+	private fun fetchUnrepliedComments(token: String, mediaId: String, businessAccountId: String, since: Instant): List<InstagramCommentItem> {
 		val result = mutableListOf<InstagramCommentItem>()
 		var after: String? = null
 		var page = 0
@@ -139,26 +213,30 @@ class CommentRecoveryService(
 			val response = instagramGraphClient.listComments(token, mediaId, after)
 			if (response.data.isEmpty()) break
 
+			var reachedBoundary = false
 			for (item in response.data) {
-				val alreadyReplied = item.replies?.data?.any { it.from?.id == businessAccountId } ?: false
-				log.info(
-					"미처리 댓글 판정: mediaId={}, commentId={}, fromId={}, businessAccountId={}, repliesFromIds={}, alreadyReplied={}",
-					mediaId,
-					item.id,
-					item.from?.id,
-					businessAccountId,
-					item.replies?.data?.map { it.from?.id },
-					alreadyReplied,
-				)
-				if (item.from?.id != businessAccountId && !alreadyReplied) {
-					result.add(item)
+				val ts = parseTimestamp(item.timestamp)
+				if (ts == null || !ts.isAfter(since)) {
+					reachedBoundary = true
+					break
 				}
+				if (item.from?.id == businessAccountId) continue
+				if (hasBusinessReply(token, item.id, businessAccountId)) continue
+				result.add(item)
 			}
+			if (reachedBoundary) break
 
 			after = response.paging?.cursors?.after ?: break
 			page++
 		}
 		return result
+	}
+
+	// comments 목록 조회 시 replies{from}을 중첩 요청해도 from이 항상 비어서 내려오는 Graph API 특성 때문에,
+	// 답글 목록을 별도 엔드포인트(/{comment-id}/replies)로 조회해 작성자를 확인한다.
+	private fun hasBusinessReply(token: String, commentId: String, businessAccountId: String): Boolean {
+		val replies = runCatching { instagramGraphClient.listReplies(token, commentId) }.getOrNull() ?: return false
+		return replies.data.any { it.from?.id == businessAccountId }
 	}
 
 	private fun latestToken(accountId: Long): String? =

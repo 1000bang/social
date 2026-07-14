@@ -5,6 +5,7 @@ import com.mysocial.common.PageResponse
 import com.mysocial.dispatch.DispatchTargetRepository
 import com.mysocial.dispatch.SendLogRepository
 import com.mysocial.post.PostRepository
+import com.mysocial.recovery.UnprocessedCommentRepository
 import com.mysocial.settings.AccountSettingsService
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
@@ -18,6 +19,7 @@ class TemplateService(
 	private val templateRepository: TemplateRepository,
 	private val dispatchTargetRepository: DispatchTargetRepository,
 	private val sendLogRepository: SendLogRepository,
+	private val unprocessedCommentRepository: UnprocessedCommentRepository,
 	private val accountSettingsService: AccountSettingsService,
 ) {
 
@@ -121,6 +123,7 @@ class TemplateService(
 
 		dispatchTargetRepository.deleteByTemplateId(id)
 		sendLogRepository.deleteByTemplateId(id)
+		unprocessedCommentRepository.deleteByTemplateId(id)
 		templateRepository.deleteById(id)
 	}
 

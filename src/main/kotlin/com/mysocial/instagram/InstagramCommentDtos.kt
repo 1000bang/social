@@ -14,7 +14,6 @@ data class InstagramCommentItem(
 	val text: String? = null,
 	val timestamp: String? = null,
 	val from: InstagramCommentAuthor? = null,
-	val replies: InstagramCommentsPageResponse? = null,
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
