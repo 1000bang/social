@@ -141,6 +141,15 @@ class CommentRecoveryService(
 
 			for (item in response.data) {
 				val alreadyReplied = item.replies?.data?.any { it.from?.id == businessAccountId } ?: false
+				log.info(
+					"미처리 댓글 판정: mediaId={}, commentId={}, fromId={}, businessAccountId={}, repliesFromIds={}, alreadyReplied={}",
+					mediaId,
+					item.id,
+					item.from?.id,
+					businessAccountId,
+					item.replies?.data?.map { it.from?.id },
+					alreadyReplied,
+				)
 				if (item.from?.id != businessAccountId && !alreadyReplied) {
 					result.add(item)
 				}
