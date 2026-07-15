@@ -34,7 +34,7 @@ class Account(
 	@Column(nullable = false)
 	var username: String,
 
-	@Column(name = "profile_picture_url")
+	@Column(name = "profile_picture_url", columnDefinition = "TEXT")
 	var profilePictureUrl: String? = null,
 
 	@Enumerated(EnumType.STRING)

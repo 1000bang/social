@@ -15,9 +15,6 @@ export function Layout() {
 					mySocial
 				</Link>
 				<div className="navbar-links">
-					<NavLink to="/home" className={navClass}>
-						홈
-					</NavLink>
 					<NavLink to="/templates" className={navClass}>
 						템플릿
 					</NavLink>
@@ -38,9 +35,6 @@ export function Layout() {
 					☰
 				</button>
 				<div className={`mobile-menu ${menuOpen ? "open" : ""}`}>
-					<NavLink to="/home" className={navClass} onClick={() => setMenuOpen(false)}>
-						홈
-					</NavLink>
 					<NavLink to="/templates" className={navClass} onClick={() => setMenuOpen(false)}>
 						템플릿
 					</NavLink>

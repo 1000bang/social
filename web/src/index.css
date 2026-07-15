@@ -557,6 +557,7 @@ textarea {
 }
 
 .insight-item {
+	margin: 0;
 	font-size: 14px;
 	color: var(--text-muted);
 	padding-left: 18px;
@@ -618,6 +619,7 @@ textarea {
 	width: 44px;
 	height: 44px;
 	border-radius: 50%;
+	border: 1px solid rgba(0, 0, 0, 0.15);
 	object-fit: cover;
 	flex-shrink: 0;
 }
