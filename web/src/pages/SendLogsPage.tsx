@@ -10,6 +10,17 @@ import type {
 	TemplateRankingResponse,
 } from "../api/types";
 
+const INSIGHT_DISPLAY_COUNT = 2;
+
+function pickRandom<T>(items: T[], count: number): T[] {
+	const shuffled = [...items];
+	for (let i = shuffled.length - 1; i > 0; i--) {
+		const j = Math.floor(Math.random() * (i + 1));
+		[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+	}
+	return shuffled.slice(0, count);
+}
+
 const GRANULARITY_LABEL: Record<ChartGranularity, string> = {
 	HOUR: "시간별",
 	DAY: "일별",
@@ -66,6 +77,7 @@ export function SendLogsPage() {
 	const [totalPages, setTotalPages] = useState(0);
 
 	const [summary, setSummary] = useState<SendLogSummaryResponse | null>(null);
+	const [insights, setInsights] = useState<string[]>([]);
 
 	const [granularity, setGranularity] = useState<ChartGranularity>("DAY");
 	const [hourDate, setHourDate] = useState(todayStr());
@@ -114,6 +126,13 @@ export function SendLogsPage() {
 
 	useEffect(() => {
 		api
+			.getSendLogInsights()
+			.then((res) => setInsights(pickRandom(res.map((i) => i.text), INSIGHT_DISPLAY_COUNT)))
+			.catch(() => setInsights([]));
+	}, []);
+
+	useEffect(() => {
+		api
 			.getTopTemplates()
 			.then(setTopTemplates)
 			.catch(() => setTopTemplates([]))
@@ -138,6 +157,16 @@ export function SendLogsPage() {
 	return (
 		<div>
 			<h2>발송 통계</h2>
+
+			{insights.length > 0 && (
+				<div className="insight-list">
+					{insights.map((text) => (
+						<p className="insight-item" key={text}>
+							{text}
+						</p>
+					))}
+				</div>
+			)}
 
 			{summary && (
 				<div className="summary-cards">
@@ -206,7 +235,9 @@ export function SendLogsPage() {
 				</div>
 				{chartLoading && <p>불러오는 중...</p>}
 				{!chartLoading && chartData.length === 0 && <p className="hint">{GRANULARITY_LABEL[granularity]} 발송 데이터가 없습니다.</p>}
-				{!chartLoading && chartData.length > 0 && <SimpleBarChart data={chartData} />}
+				{!chartLoading && chartData.length > 0 && (
+					<SimpleBarChart data={chartData} scrollable={granularity === "HOUR"} />
+				)}
 			</div>
 
 			<div className="chart-section">

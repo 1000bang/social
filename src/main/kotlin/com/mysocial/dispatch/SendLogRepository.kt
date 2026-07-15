@@ -11,6 +11,12 @@ interface SendLogRepository : JpaRepository<SendLog, Long> {
 	fun deleteByTemplateId(templateId: Long)
 	fun findByTemplateAccountId(accountId: Long, pageable: Pageable): Page<SendLog>
 	fun countByTemplateAccountIdAndResultAndCreatedAtAfter(accountId: Long, result: SendResult, createdAt: Instant): Long
+	fun countByTemplateAccountIdAndResultAndCreatedAtBetween(
+		accountId: Long,
+		result: SendResult,
+		from: Instant,
+		to: Instant,
+	): Long
 	fun findByTemplateAccountIdAndResultAndCreatedAtBetween(
 		accountId: Long,
 		result: SendResult,
@@ -30,5 +36,22 @@ interface SendLogRepository : JpaRepository<SendLog, Long> {
 	fun countByTemplateGroupedByTemplate(
 		@Param("accountId") accountId: Long,
 		@Param("result") result: SendResult,
+	): List<TemplateStatRow>
+
+	@Query(
+		"""
+		SELECT new com.mysocial.dispatch.TemplateStatRow(s.template.id, COUNT(s))
+		FROM SendLog s
+		WHERE s.template.account.id = :accountId
+		  AND s.result = :result
+		  AND s.createdAt BETWEEN :from AND :to
+		GROUP BY s.template.id
+		""",
+	)
+	fun countByTemplateGroupedByTemplateBetween(
+		@Param("accountId") accountId: Long,
+		@Param("result") result: SendResult,
+		@Param("from") from: Instant,
+		@Param("to") to: Instant,
 	): List<TemplateStatRow>
 }

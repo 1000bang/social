@@ -6,6 +6,7 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
@@ -81,6 +82,58 @@ class SendLogService(
 			from.atStartOfDay(ZONE).toInstant(),
 			to.plusDays(1).atStartOfDay(ZONE).toInstant(),
 		)
+
+	@Transactional(readOnly = true)
+	fun insights(accountId: Long): List<SendLogInsightResponse> {
+		val today = LocalDate.now(ZONE)
+		val startOfThisMonth = today.withDayOfMonth(1).atStartOfDay(ZONE).toInstant()
+		val startOfLastMonth = today.minusMonths(1).withDayOfMonth(1).atStartOfDay(ZONE).toInstant()
+		val now = Instant.now()
+
+		return listOfNotNull(
+			monthOverMonthInsight(accountId, startOfLastMonth, startOfThisMonth, now),
+			successRateInsight(accountId, startOfThisMonth, now),
+			topTemplateInsight(accountId, startOfThisMonth, now),
+			peakHourInsight(accountId, startOfThisMonth, now),
+		).map { SendLogInsightResponse(it) }
+	}
+
+	private fun monthOverMonthInsight(accountId: Long, lastMonthStart: Instant, thisMonthStart: Instant, now: Instant): String? {
+		val lastMonthCount =
+			sendLogRepository.countByTemplateAccountIdAndResultAndCreatedAtBetween(accountId, SendResult.SUCCESS, lastMonthStart, thisMonthStart)
+		if (lastMonthCount == 0L) return null
+		val thisMonthCount =
+			sendLogRepository.countByTemplateAccountIdAndResultAndCreatedAtBetween(accountId, SendResult.SUCCESS, thisMonthStart, now)
+		val growth = (thisMonthCount - lastMonthCount) * 100 / lastMonthCount
+		return when {
+			growth > 0 -> "이번 달 발송 메시지가 지난달보다 ${growth}% 늘었어요 (${lastMonthCount}건 → ${thisMonthCount}건)"
+			growth < 0 -> "이번 달 발송 메시지가 지난달보다 ${-growth}% 줄었어요 (${lastMonthCount}건 → ${thisMonthCount}건)"
+			else -> "이번 달 발송 메시지가 지난달과 같은 수준이에요 (${thisMonthCount}건)"
+		}
+	}
+
+	private fun successRateInsight(accountId: Long, from: Instant, to: Instant): String? {
+		val success = sendLogRepository.countByTemplateAccountIdAndResultAndCreatedAtBetween(accountId, SendResult.SUCCESS, from, to)
+		val failed = sendLogRepository.countByTemplateAccountIdAndResultAndCreatedAtBetween(accountId, SendResult.FAILED, from, to)
+		val total = success + failed
+		if (total == 0L) return null
+		val rate = success * 100 / total
+		return "이번 달 발송 성공률은 ${rate}%예요 (${total}건 중 ${success}건 성공)"
+	}
+
+	private fun topTemplateInsight(accountId: Long, from: Instant, to: Instant): String? {
+		val top = sendLogRepository.countByTemplateGroupedByTemplateBetween(accountId, SendResult.SUCCESS, from, to)
+			.maxByOrNull { it.count } ?: return null
+		val name = templateRepository.findById(top.templateId).orElse(null)?.name ?: return null
+		return "이번 달 가장 많이 발송된 템플릿은 '${name}'이에요 (${top.count}건)"
+	}
+
+	private fun peakHourInsight(accountId: Long, from: Instant, to: Instant): String? {
+		val logs = sendLogRepository.findByTemplateAccountIdAndResultAndCreatedAtBetween(accountId, SendResult.SUCCESS, from, to)
+		if (logs.isEmpty()) return null
+		val peak = logs.groupingBy { it.createdAt.atZone(ZONE).hour }.eachCount().maxByOrNull { it.value } ?: return null
+		return "이번 달 메시지는 ${peak.key}시에 가장 많이 발송됐어요 (${peak.value}건)"
+	}
 
 	@Transactional(readOnly = true)
 	fun topTemplates(accountId: Long): List<TemplateRankingResponse> {

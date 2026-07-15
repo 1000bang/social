@@ -27,6 +27,10 @@ data class ChartBucket(
 	val count: Int,
 )
 
+data class SendLogInsightResponse(
+	val text: String,
+)
+
 data class SendLogResponse(
 	val id: Long,
 	val templateId: Long,

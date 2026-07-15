@@ -7,6 +7,7 @@ import type {
 	PageResponse,
 	PostResponse,
 	RecoveryCardResponse,
+	SendLogInsightResponse,
 	SendLogResponse,
 	SendLogSummaryResponse,
 	TemplateDetailResponse,
@@ -86,6 +87,7 @@ export const api = {
 		const query = new URLSearchParams({ granularity, ...toStringParams(params) });
 		return request<ChartBucket[]>(`/api/send-logs/chart?${query.toString()}`);
 	},
+	getSendLogInsights: () => request<SendLogInsightResponse[]>("/api/send-logs/insights"),
 	getTopTemplates: () => request<TemplateRankingResponse[]>("/api/send-logs/top-templates"),
 	listPosts: () => request<PostResponse[]>("/api/posts"),
 	uploadMedia: (file: File) => {

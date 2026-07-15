@@ -91,6 +91,10 @@ export interface ChartBucket {
 	count: number;
 }
 
+export interface SendLogInsightResponse {
+	text: string;
+}
+
 export interface TemplateRankingResponse {
 	templateId: number;
 	templateName: string;

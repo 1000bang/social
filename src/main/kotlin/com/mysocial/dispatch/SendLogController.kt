@@ -37,6 +37,10 @@ class SendLogController(
 		@RequestParam(required = false) year: Int?,
 	): List<ChartBucket> = sendLogService.chart(accountId, granularity, date, from, to, year)
 
+	@GetMapping("/insights")
+	fun insights(@RequestAttribute(CURRENT_ACCOUNT_ID_ATTRIBUTE) accountId: Long): List<SendLogInsightResponse> =
+		sendLogService.insights(accountId)
+
 	@GetMapping("/top-templates")
 	fun topTemplates(@RequestAttribute(CURRENT_ACCOUNT_ID_ATTRIBUTE) accountId: Long): List<TemplateRankingResponse> =
 		sendLogService.topTemplates(accountId)

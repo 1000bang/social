@@ -461,6 +461,27 @@ textarea {
 	margin-top: 6px;
 }
 
+.insight-list {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	margin-bottom: 20px;
+}
+
+.insight-item {
+	font-size: 14px;
+	color: var(--text-muted);
+	padding-left: 18px;
+	position: relative;
+}
+
+.insight-item::before {
+	content: "•";
+	position: absolute;
+	left: 4px;
+	color: var(--accent);
+}
+
 .summary-cards {
 	display: flex;
 	gap: 16px;
@@ -542,6 +563,21 @@ textarea {
 	flex: 1 1 0;
 	min-width: 0;
 	height: 100%;
+}
+
+/* 시간별은 24칸이라 라벨이 다 보이려면 폭이 필요해서, 이 모드만 예전처럼 고정 폭 + 가로 스크롤을 허용한다. */
+.simple-bar-chart--scrollable {
+	overflow-x: auto;
+	justify-content: flex-start;
+}
+
+.simple-bar-chart--scrollable .simple-bar-column {
+	flex: 1 0 40px;
+	min-width: 40px;
+}
+
+.simple-bar-chart--scrollable .simple-bar {
+	max-width: 36px;
 }
 
 .simple-bar-value {
