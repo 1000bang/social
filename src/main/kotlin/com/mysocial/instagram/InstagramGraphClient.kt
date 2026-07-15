@@ -93,13 +93,14 @@ class InstagramGraphClient {
 			.retrieve()
 			.body(InstagramCommentItem::class.java)
 
-	// Instagram Graph API는 comments 목록 조회 시 replies{from} 같은 중첩 필드 확장을 지원하지 않아
-	// (from이 항상 비어서 내려옴), 답글은 댓글별로 별도 엔드포인트를 호출해 확인한다.
+	// Instagram Graph API는 comments 목록 조회 시 replies{from} 같은 중첩 필드 확장을 지원하지 않고,
+	// 이 전용 엔드포인트로 조회해도 from 자체를 내려주지 않아 답글 작성자를 식별할 수 없다.
+	// 그래서 이 응답은 text로 우리 봇 문구와 비교하는 용도로만 쓴다.
 	fun listReplies(accessToken: String, commentId: String): InstagramCommentsPageResponse =
 		restClient.get()
 			.uri { builder ->
 				builder.path("/$commentId/replies")
-					.queryParam("fields", "id,from")
+					.queryParam("fields", "id,from,text")
 					.queryParam("access_token", accessToken)
 					.build()
 			}

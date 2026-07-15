@@ -41,7 +41,7 @@ class CommentRecoveryService(
 			val archivedIds = archived.map { it.platformCommentId }.toSet()
 
 			val live = if (checkpoint != null) {
-				fetchUnrepliedComments(token, template.post.platformPostId, template.account.platformAccountId, checkpoint)
+				fetchUnrepliedComments(token, template.post.platformPostId, template, checkpoint)
 					.filter { it.id !in archivedIds }
 			} else {
 				emptyList()
@@ -103,7 +103,7 @@ class CommentRecoveryService(
 			log.info("복구 처리 생략: 비즈니스 계정 자신이 남긴 댓글 commentId={}", commentId)
 			return
 		}
-		if (hasBusinessReply(token, commentId, template.account.platformAccountId)) {
+		if (hasBusinessReply(token, commentId, template)) {
 			log.info("복구 처리 생략: 이미 답글을 남긴 댓글 commentId={}", commentId)
 			return
 		}
@@ -127,7 +127,7 @@ class CommentRecoveryService(
 
 		val checkpoint = recoveryCheckpointRepository.findByAccountId(accountId)?.lastCheckedAt
 		if (checkpoint != null) {
-			val liveComments = fetchUnrepliedComments(token, template.post.platformPostId, template.account.platformAccountId, checkpoint)
+			val liveComments = fetchUnrepliedComments(token, template.post.platformPostId, template, checkpoint)
 				.sortedBy { parseTimestamp(it.timestamp) ?: Instant.EPOCH }
 			log.info("일괄 복구 처리 시작(실시간 구간): templateId={}, count={}", template.id, liveComments.size)
 			liveComments.forEach { item ->
@@ -150,7 +150,7 @@ class CommentRecoveryService(
 
 		val templates = templateRepository.findAllByAccountId(accountId).filter { it.activeYn }
 		templates.forEach { template ->
-			val comments = fetchUnrepliedComments(token, template.post.platformPostId, template.account.platformAccountId, since)
+			val comments = fetchUnrepliedComments(token, template.post.platformPostId, template, since)
 			comments.forEach { item ->
 				val ts = parseTimestamp(item.timestamp) ?: return@forEach
 				val fromId = item.from?.id ?: return@forEach
@@ -204,7 +204,8 @@ class CommentRecoveryService(
 
 	// since보다 최신인 댓글만 최신순으로 페이지를 넘겨가며 수집하고, 그중 비즈니스 계정이 아직 답글을 남기지 않은 것만 남긴다.
 	// since보다 오래된 댓글에 도달하면 그 이전은 이미 확인된 구간이므로 중단한다. (MAX_PAGES는 최악의 경우를 방어)
-	private fun fetchUnrepliedComments(token: String, mediaId: String, businessAccountId: String, since: Instant): List<InstagramCommentItem> {
+	private fun fetchUnrepliedComments(token: String, mediaId: String, template: Template, since: Instant): List<InstagramCommentItem> {
+		val businessAccountId = template.account.platformAccountId
 		val result = mutableListOf<InstagramCommentItem>()
 		var after: String? = null
 		var page = 0
@@ -221,7 +222,7 @@ class CommentRecoveryService(
 					break
 				}
 				if (item.from?.id == businessAccountId) continue
-				if (hasBusinessReply(token, item.id, businessAccountId)) continue
+				if (hasBusinessReply(token, item.id, template)) continue
 				result.add(item)
 			}
 			if (reachedBoundary) break
@@ -232,11 +233,12 @@ class CommentRecoveryService(
 		return result
 	}
 
-	// comments 목록 조회 시 replies{from}을 중첩 요청해도 from이 항상 비어서 내려오는 Graph API 특성 때문에,
-	// 답글 목록을 별도 엔드포인트(/{comment-id}/replies)로 조회해 작성자를 확인한다.
-	private fun hasBusinessReply(token: String, commentId: String, businessAccountId: String): Boolean {
+	// 이 계정/토큰으로는 Graph API가 답글의 from을 아예 내려주지 않아서(권한/API 자체의 한계로 보임),
+	// 답글 작성자 비교 대신 답글 텍스트가 템플릿에 설정된 우리 봇 문구와 일치하는지로 "이미 답글 남김"을 판단한다.
+	private fun hasBusinessReply(token: String, commentId: String, template: Template): Boolean {
 		val replies = runCatching { instagramGraphClient.listReplies(token, commentId) }.getOrNull() ?: return false
-		return replies.data.any { it.from?.id == businessAccountId }
+		val knownReplyTexts = setOf(template.resolvedCommentReplyText(), template.resolvedNonKeywordCommentReplyText())
+		return replies.data.any { it.text in knownReplyTexts }
 	}
 
 	private fun latestToken(accountId: Long): String? =
