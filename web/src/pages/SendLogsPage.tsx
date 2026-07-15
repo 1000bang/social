@@ -16,6 +16,32 @@ const GRANULARITY_LABEL: Record<ChartGranularity, string> = {
 	MONTH: "월별",
 };
 
+const MAX_DAY_RANGE = 10;
+
+function toDateStr(d: Date): string {
+	// toISOString()은 UTC 기준이라 자정 전후로 로컬 날짜와 하루 어긋날 수 있어, 로컬 날짜 요소를 직접 조합한다.
+	const year = d.getFullYear();
+	const month = String(d.getMonth() + 1).padStart(2, "0");
+	const day = String(d.getDate()).padStart(2, "0");
+	return `${year}-${month}-${day}`;
+}
+
+function todayStr(): string {
+	return toDateStr(new Date());
+}
+
+function addDays(dateStr: string, days: number): string {
+	const d = new Date(`${dateStr}T00:00:00`);
+	d.setDate(d.getDate() + days);
+	return toDateStr(d);
+}
+
+function daysBetween(a: string, b: string): number {
+	const d1 = new Date(`${a}T00:00:00`);
+	const d2 = new Date(`${b}T00:00:00`);
+	return Math.round((d2.getTime() - d1.getTime()) / (1000 * 60 * 60 * 24));
+}
+
 function formatLogDate(iso: string): string {
 	const date = new Date(iso);
 	const now = new Date();
@@ -42,8 +68,30 @@ export function SendLogsPage() {
 	const [summary, setSummary] = useState<SendLogSummaryResponse | null>(null);
 
 	const [granularity, setGranularity] = useState<ChartGranularity>("DAY");
+	const [hourDate, setHourDate] = useState(todayStr());
+	const [dayFrom, setDayFrom] = useState(addDays(todayStr(), -7));
+	const [dayTo, setDayTo] = useState(todayStr());
+	const [monthYear, setMonthYear] = useState(new Date().getFullYear());
 	const [chartData, setChartData] = useState<ChartBucket[]>([]);
 	const [chartLoading, setChartLoading] = useState(true);
+
+	const handleDayFromChange = (value: string) => {
+		setDayFrom(value);
+		if (daysBetween(value, dayTo) < 0) {
+			setDayTo(value);
+		} else if (daysBetween(value, dayTo) > MAX_DAY_RANGE - 1) {
+			setDayTo(addDays(value, MAX_DAY_RANGE - 1));
+		}
+	};
+
+	const handleDayToChange = (value: string) => {
+		setDayTo(value);
+		if (daysBetween(dayFrom, value) < 0) {
+			setDayFrom(value);
+		} else if (daysBetween(dayFrom, value) > MAX_DAY_RANGE - 1) {
+			setDayFrom(addDays(value, -(MAX_DAY_RANGE - 1)));
+		}
+	};
 
 	const [topTemplates, setTopTemplates] = useState<TemplateRankingResponse[]>([]);
 	const [topTemplatesLoading, setTopTemplatesLoading] = useState(true);
@@ -74,12 +122,18 @@ export function SendLogsPage() {
 
 	useEffect(() => {
 		setChartLoading(true);
+		const params =
+			granularity === "HOUR"
+				? { date: hourDate }
+				: granularity === "DAY"
+					? { from: dayFrom, to: dayTo }
+					: { year: monthYear };
 		api
-			.getSendLogChart(granularity)
+			.getSendLogChart(granularity, params)
 			.then(setChartData)
 			.catch(() => setChartData([]))
 			.finally(() => setChartLoading(false));
-	}, [granularity]);
+	}, [granularity, hourDate, dayFrom, dayTo, monthYear]);
 
 	return (
 		<div>
@@ -101,11 +155,54 @@ export function SendLogsPage() {
 			<div className="chart-section">
 				<div className="chart-header">
 					<strong>발송 추이</strong>
-					<select value={granularity} onChange={(e) => setGranularity(e.target.value as ChartGranularity)}>
+					<select
+						className="chart-field"
+						value={granularity}
+						onChange={(e) => setGranularity(e.target.value as ChartGranularity)}
+					>
 						<option value="HOUR">시간별</option>
 						<option value="DAY">일별</option>
 						<option value="MONTH">월별</option>
 					</select>
+				</div>
+				<div className="chart-controls">
+					{granularity === "HOUR" && (
+						<input
+							className="chart-field"
+							type="date"
+							value={hourDate}
+							max={todayStr()}
+							onChange={(e) => setHourDate(e.target.value)}
+						/>
+					)}
+					{granularity === "DAY" && (
+						<>
+							<input
+								className="chart-field"
+								type="date"
+								value={dayFrom}
+								max={todayStr()}
+								onChange={(e) => handleDayFromChange(e.target.value)}
+							/>
+							<span>~</span>
+							<input
+								className="chart-field"
+								type="date"
+								value={dayTo}
+								max={todayStr()}
+								onChange={(e) => handleDayToChange(e.target.value)}
+							/>
+						</>
+					)}
+					{granularity === "MONTH" && (
+						<select className="chart-field" value={monthYear} onChange={(e) => setMonthYear(Number(e.target.value))}>
+							{Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map((y) => (
+								<option key={y} value={y}>
+									{y}년
+								</option>
+							))}
+						</select>
+					)}
 				</div>
 				{chartLoading && <p>불러오는 중...</p>}
 				{!chartLoading && chartData.length === 0 && <p className="hint">{GRANULARITY_LABEL[granularity]} 발송 데이터가 없습니다.</p>}

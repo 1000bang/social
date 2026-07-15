@@ -6,11 +6,14 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
+import java.time.temporal.ChronoUnit
 
 private val ZONE = ZoneId.of("Asia/Seoul")
 private const val TOP_TEMPLATES_LIMIT = 10
+private const val MAX_DAY_RANGE = 10
 
 @Service
 class SendLogService(
@@ -34,20 +37,50 @@ class SendLogService(
 	}
 
 	@Transactional(readOnly = true)
-	fun chart(accountId: Long, granularity: ChartGranularity): List<ChartBucket> {
-		val logs = sendLogRepository.findByTemplateAccountIdAndResult(accountId, SendResult.SUCCESS)
-
-		val counts = when (granularity) {
-			ChartGranularity.HOUR -> logs.groupingBy { "%02d시".format(it.createdAt.atZone(ZONE).hour) }.eachCount()
-			ChartGranularity.DAY -> logs.groupingBy { it.createdAt.atZone(ZONE).toLocalDate().toString() }.eachCount()
-			ChartGranularity.MONTH -> logs.groupingBy {
-				val date = it.createdAt.atZone(ZONE).toLocalDate()
-				"%04d-%02d".format(date.year, date.monthValue)
-			}.eachCount()
-		}
-
-		return counts.entries.sortedBy { it.key }.map { ChartBucket(it.key, it.value) }
+	fun chart(
+		accountId: Long,
+		granularity: ChartGranularity,
+		date: LocalDate?,
+		from: LocalDate?,
+		to: LocalDate?,
+		year: Int?,
+	): List<ChartBucket> = when (granularity) {
+		ChartGranularity.HOUR -> hourChart(accountId, date ?: LocalDate.now(ZONE))
+		ChartGranularity.DAY -> dayChart(accountId, from ?: LocalDate.now(ZONE).minusDays(7), to ?: LocalDate.now(ZONE))
+		ChartGranularity.MONTH -> monthChart(accountId, year ?: LocalDate.now(ZONE).year)
 	}
+
+	private fun hourChart(accountId: Long, date: LocalDate): List<ChartBucket> {
+		val logs = logsBetween(accountId, date, date)
+		val counts = logs.groupingBy { it.createdAt.atZone(ZONE).hour }.eachCount()
+		return (0..23).map { hour -> ChartBucket("%02d시".format(hour), counts[hour] ?: 0) }
+	}
+
+	private fun dayChart(accountId: Long, from: LocalDate, to: LocalDate): List<ChartBucket> {
+		require(!to.isBefore(from)) { "종료일은 시작일보다 빠를 수 없습니다" }
+		require(ChronoUnit.DAYS.between(from, to) < MAX_DAY_RANGE) { "최대 ${MAX_DAY_RANGE}일까지 조회할 수 있습니다" }
+
+		val logs = logsBetween(accountId, from, to)
+		val counts = logs.groupingBy { it.createdAt.atZone(ZONE).toLocalDate() }.eachCount()
+		return generateSequence(from) { it.plusDays(1) }
+			.takeWhile { !it.isAfter(to) }
+			.map { ChartBucket("%02d.%02d".format(it.monthValue, it.dayOfMonth), counts[it] ?: 0) }
+			.toList()
+	}
+
+	private fun monthChart(accountId: Long, year: Int): List<ChartBucket> {
+		val logs = logsBetween(accountId, LocalDate.of(year, 1, 1), LocalDate.of(year, 12, 31))
+		val counts = logs.groupingBy { it.createdAt.atZone(ZONE).monthValue }.eachCount()
+		return (1..12).map { month -> ChartBucket("${month}월", counts[month] ?: 0) }
+	}
+
+	private fun logsBetween(accountId: Long, from: LocalDate, to: LocalDate) =
+		sendLogRepository.findByTemplateAccountIdAndResultAndCreatedAtBetween(
+			accountId,
+			SendResult.SUCCESS,
+			from.atStartOfDay(ZONE).toInstant(),
+			to.plusDays(1).atStartOfDay(ZONE).toInstant(),
+		)
 
 	@Transactional(readOnly = true)
 	fun topTemplates(accountId: Long): List<TemplateRankingResponse> {

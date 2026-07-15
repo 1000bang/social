@@ -53,6 +53,14 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 	return res.json() as Promise<T>;
 }
 
+function toStringParams(params: Record<string, string | number | undefined>): Record<string, string> {
+	const result: Record<string, string> = {};
+	for (const [key, value] of Object.entries(params)) {
+		if (value !== undefined) result[key] = String(value);
+	}
+	return result;
+}
+
 export const api = {
 	getLoginUrl: () => request<{ url: string }>("/api/auth/instagram/login-url"),
 	listTemplates: (page = 0, size = 10) =>
@@ -71,8 +79,13 @@ export const api = {
 	listSendLogs: (page = 0, size = 10) =>
 		request<PageResponse<SendLogResponse>>(`/api/send-logs?page=${page}&size=${size}`),
 	getSendLogSummary: () => request<SendLogSummaryResponse>("/api/send-logs/summary"),
-	getSendLogChart: (granularity: ChartGranularity) =>
-		request<ChartBucket[]>(`/api/send-logs/chart?granularity=${granularity}`),
+	getSendLogChart: (
+		granularity: ChartGranularity,
+		params: { date?: string; from?: string; to?: string; year?: number } = {},
+	) => {
+		const query = new URLSearchParams({ granularity, ...toStringParams(params) });
+		return request<ChartBucket[]>(`/api/send-logs/chart?${query.toString()}`);
+	},
 	getTopTemplates: () => request<TemplateRankingResponse[]>("/api/send-logs/top-templates"),
 	listPosts: () => request<PostResponse[]>("/api/posts"),
 	uploadMedia: (file: File) => {

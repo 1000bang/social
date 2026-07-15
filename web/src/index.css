@@ -498,20 +498,40 @@ textarea {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
+	gap: 8px;
 	margin-bottom: 12px;
 }
 
-.chart-header select {
-	width: auto;
+.chart-controls {
+	display: flex;
+	justify-content: flex-end;
+	align-items: center;
+	gap: 8px;
+	flex-wrap: nowrap;
+	margin-bottom: 12px;
+}
+
+/* 시간별/일별/월별 전환 시에도 각 필드가 같은 폭 규칙을 따르도록 해서 정렬돼 보이게 한다.
+   flex-shrink를 허용해 일별 두 날짜가 fieldset 폭 안에서 항상 한 줄에 들어가게 한다. */
+.chart-field {
+	flex: 1 1 0;
+	min-width: 0;
+	max-width: 200px;
+	width: 100%;
+}
+
+.chart-controls span {
+	flex: 0 0 auto;
+	color: var(--text-muted);
 }
 
 .simple-bar-chart {
 	display: flex;
 	align-items: flex-end;
-	gap: 8px;
+	gap: clamp(2px, 0.8vw, 8px);
 	height: 240px;
 	padding: 8px 4px 0;
-	overflow-x: auto;
+	width: 100%;
 }
 
 .simple-bar-column {
@@ -519,26 +539,27 @@ textarea {
 	flex-direction: column;
 	align-items: center;
 	justify-content: flex-end;
-	flex: 1 0 40px;
+	flex: 1 1 0;
+	min-width: 0;
 	height: 100%;
 }
 
 .simple-bar-value {
-	font-size: 12px;
+	font-size: 11px;
 	color: var(--text-muted);
 	margin-bottom: 4px;
 }
 
 .simple-bar {
 	width: 100%;
-	max-width: 36px;
+	max-width: 32px;
 	background: var(--accent);
 	border-radius: 4px 4px 0 0;
 	min-height: 2px;
 }
 
 .simple-bar-label {
-	font-size: 11px;
+	font-size: 10px;
 	color: var(--text-muted);
 	margin-top: 6px;
 	white-space: nowrap;
