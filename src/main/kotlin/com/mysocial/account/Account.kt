@@ -34,6 +34,9 @@ class Account(
 	@Column(nullable = false)
 	var username: String,
 
+	@Column(name = "profile_picture_url")
+	var profilePictureUrl: String? = null,
+
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false)
 	var status: AccountStatus = AccountStatus.ACTIVE,

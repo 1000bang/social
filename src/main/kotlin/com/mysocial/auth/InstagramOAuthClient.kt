@@ -65,7 +65,7 @@ class InstagramOAuthClient(
 		val me = graphRestClient.get()
 			.uri { builder ->
 				builder.path("/me")
-					.queryParam("fields", "user_id,username")
+					.queryParam("fields", "user_id,username,profile_picture_url")
 					.queryParam("access_token", userAccessToken)
 					.build()
 			}
@@ -75,6 +75,7 @@ class InstagramOAuthClient(
 		return InstagramAccountInfo(
 			id = me?.userId ?: me?.id ?: fallbackUserId,
 			username = me?.username,
+			profilePictureUrl = me?.profilePictureUrl,
 		)
 	}
 

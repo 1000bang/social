@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { NavLink, Outlet } from "react-router-dom";
+import { Link, NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 
 export function Layout() {
@@ -11,8 +11,13 @@ export function Layout() {
 	return (
 		<div>
 			<nav className="navbar">
-				<span className="brand">mySocial</span>
+				<Link className="brand" to="/home">
+					mySocial
+				</Link>
 				<div className="navbar-links">
+					<NavLink to="/home" className={navClass}>
+						홈
+					</NavLink>
 					<NavLink to="/templates" className={navClass}>
 						템플릿
 					</NavLink>
@@ -33,6 +38,9 @@ export function Layout() {
 					☰
 				</button>
 				<div className={`mobile-menu ${menuOpen ? "open" : ""}`}>
+					<NavLink to="/home" className={navClass} onClick={() => setMenuOpen(false)}>
+						홈
+					</NavLink>
 					<NavLink to="/templates" className={navClass} onClick={() => setMenuOpen(false)}>
 						템플릿
 					</NavLink>

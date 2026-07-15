@@ -1,4 +1,5 @@
 import type {
+	AccountMeResponse,
 	AccountSettingsResponse,
 	ChartBucket,
 	ChartGranularity,
@@ -95,6 +96,7 @@ export const api = {
 		formData.append("file", file);
 		return request<MediaUploadResponse>("/api/media", { method: "POST", body: formData });
 	},
+	getMe: () => request<AccountMeResponse>("/api/account/me"),
 	getSettings: () => request<AccountSettingsResponse>("/api/settings"),
 	updateSettings: (body: UpdateAccountSettingsRequest) =>
 		request<AccountSettingsResponse>("/api/settings", { method: "PUT", body: JSON.stringify(body) }),

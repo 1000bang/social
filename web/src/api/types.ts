@@ -95,6 +95,11 @@ export interface SendLogInsightResponse {
 	text: string;
 }
 
+export interface AccountMeResponse {
+	username: string;
+	profilePictureUrl: string | null;
+}
+
 export interface TemplateRankingResponse {
 	templateId: number;
 	templateName: string;

@@ -4,6 +4,7 @@ import { ProtectedRoute } from "./auth/ProtectedRoute";
 import { Layout } from "./components/Layout";
 import { LoginPage } from "./pages/LoginPage";
 import { AuthCallbackPage } from "./pages/AuthCallbackPage";
+import { HomePage } from "./pages/HomePage";
 import { TemplatesPage } from "./pages/TemplatesPage";
 import { SendLogsPage } from "./pages/SendLogsPage";
 import { SettingsPage } from "./pages/SettingsPage";
@@ -17,13 +18,14 @@ export function App() {
 				<Route path="/auth/callback" element={<AuthCallbackPage />} />
 				<Route element={<ProtectedRoute />}>
 					<Route element={<Layout />}>
+						<Route path="/home" element={<HomePage />} />
 						<Route path="/templates" element={<TemplatesPage />} />
 						<Route path="/send-logs" element={<SendLogsPage />} />
 						<Route path="/settings" element={<SettingsPage />} />
 						<Route path="/recovery" element={<RecoveryPage />} />
 					</Route>
 				</Route>
-				<Route path="*" element={<Navigate to="/templates" replace />} />
+				<Route path="*" element={<Navigate to="/home" replace />} />
 			</Routes>
 		</AuthProvider>
 	);

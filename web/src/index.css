@@ -88,6 +88,7 @@ textarea {
 .navbar .brand {
 	font-weight: 700;
 	margin-right: 12px;
+	color: var(--text);
 }
 
 .navbar a {
@@ -513,6 +514,86 @@ textarea {
 	border-radius: 8px;
 	padding: 16px 20px;
 	margin-bottom: 24px;
+}
+
+.home-greeting {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin-bottom: 20px;
+}
+
+.home-greeting h2 {
+	margin: 0;
+}
+
+.profile-avatar {
+	width: 44px;
+	height: 44px;
+	border-radius: 50%;
+	object-fit: cover;
+	flex-shrink: 0;
+}
+
+.profile-avatar-placeholder {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: var(--accent);
+	color: #fff;
+	font-weight: 700;
+	font-size: 18px;
+}
+
+.home-grid {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 16px;
+}
+
+.home-grid .chart-section {
+	margin-bottom: 0;
+}
+
+.quick-link-grid {
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap: 16px;
+	margin-top: 24px;
+}
+
+.quick-link-card {
+	display: block;
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	padding: 16px 20px;
+	text-decoration: none;
+	color: inherit;
+	transition: border-color 0.15s ease;
+}
+
+.quick-link-card:hover {
+	border-color: var(--accent);
+}
+
+.quick-link-card strong {
+	display: block;
+	margin-bottom: 4px;
+	color: var(--text);
+}
+
+.quick-link-card p {
+	margin: 0;
+	font-size: 13px;
+	color: var(--text-muted);
+}
+
+@media (max-width: 640px) {
+	.home-grid,
+	.quick-link-grid {
+		grid-template-columns: 1fr;
+	}
 }
 
 .chart-header {

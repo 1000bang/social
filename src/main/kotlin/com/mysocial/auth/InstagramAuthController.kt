@@ -54,6 +54,7 @@ class InstagramAuthController(
 			val account = accountRepository.findByPlatformAndPlatformAccountId(SocialPlatform.INSTAGRAM, igAccount.id)
 				?.also {
 					it.username = igAccount.username ?: igAccount.id
+					it.profilePictureUrl = igAccount.profilePictureUrl
 					it.status = AccountStatus.ACTIVE
 				}
 				?: accountRepository.save(
@@ -61,6 +62,7 @@ class InstagramAuthController(
 						platform = SocialPlatform.INSTAGRAM,
 						platformAccountId = igAccount.id,
 						username = igAccount.username ?: igAccount.id,
+						profilePictureUrl = igAccount.profilePictureUrl,
 					),
 				)
 

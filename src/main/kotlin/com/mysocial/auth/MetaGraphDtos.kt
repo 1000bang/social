@@ -20,9 +20,11 @@ data class InstagramMeResponse(
 	@JsonProperty("user_id") val userId: String? = null,
 	val id: String? = null,
 	val username: String? = null,
+	@JsonProperty("profile_picture_url") val profilePictureUrl: String? = null,
 )
 
 data class InstagramAccountInfo(
 	val id: String,
 	val username: String?,
+	val profilePictureUrl: String?,
 )

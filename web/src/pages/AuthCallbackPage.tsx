@@ -14,7 +14,7 @@ export function AuthCallbackPage() {
 
 		if (token) {
 			login(token);
-			navigate("/templates", { replace: true });
+			navigate("/home", { replace: true });
 		} else {
 			setError(err ?? "알 수 없는 오류가 발생했습니다");
 		}
