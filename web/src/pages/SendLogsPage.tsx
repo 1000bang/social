@@ -115,8 +115,6 @@ export function SendLogsPage() {
 	const [audienceTypeInput, setAudienceTypeInput] = useState<"" | AudienceType>("");
 	const [logFrom, setLogFrom] = useState("");
 	const [logTo, setLogTo] = useState("");
-	const [logFromText, setLogFromText] = useState("");
-	const [logToText, setLogToText] = useState("");
 	const [appliedFilters, setAppliedFilters] = useState<{
 		templateName?: string;
 		audienceType?: AudienceType;
@@ -124,40 +122,18 @@ export function SendLogsPage() {
 		to?: string;
 	}>({});
 
-	const isValidDateStr = (value: string): boolean => {
-		if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
-		const d = new Date(`${value}T00:00:00`);
-		return !isNaN(d.getTime()) && toDateStr(d) === value;
-	};
-
-	const handleLogFromTextChange = (value: string) => {
-		setLogFromText(value);
-		if (!isValidDateStr(value) || value > todayStr()) return;
+	const handleLogFromChange = (value: string) => {
 		setLogFrom(value);
-		if (!logTo) return;
-		if (daysBetween(value, logTo) < 0) {
-			setLogTo(value);
-			setLogToText(value);
-		} else if (daysBetween(value, logTo) > MAX_LOG_SEARCH_DAYS - 1) {
-			const clamped = addDays(value, MAX_LOG_SEARCH_DAYS - 1);
-			setLogTo(clamped);
-			setLogToText(clamped);
-		}
+		if (!value || !logTo) return;
+		if (daysBetween(value, logTo) < 0) setLogTo(value);
+		else if (daysBetween(value, logTo) > MAX_LOG_SEARCH_DAYS - 1) setLogTo(addDays(value, MAX_LOG_SEARCH_DAYS - 1));
 	};
 
-	const handleLogToTextChange = (value: string) => {
-		setLogToText(value);
-		if (!isValidDateStr(value) || value > todayStr()) return;
+	const handleLogToChange = (value: string) => {
 		setLogTo(value);
-		if (!logFrom) return;
-		if (daysBetween(logFrom, value) < 0) {
-			setLogFrom(value);
-			setLogFromText(value);
-		} else if (daysBetween(logFrom, value) > MAX_LOG_SEARCH_DAYS - 1) {
-			const clamped = addDays(value, -(MAX_LOG_SEARCH_DAYS - 1));
-			setLogFrom(clamped);
-			setLogFromText(clamped);
-		}
+		if (!logFrom || !value) return;
+		if (daysBetween(logFrom, value) < 0) setLogFrom(value);
+		else if (daysBetween(logFrom, value) > MAX_LOG_SEARCH_DAYS - 1) setLogFrom(addDays(value, -(MAX_LOG_SEARCH_DAYS - 1)));
 	};
 
 	const handleSearch = () => {
@@ -175,8 +151,6 @@ export function SendLogsPage() {
 		setAudienceTypeInput("");
 		setLogFrom("");
 		setLogTo("");
-		setLogFromText("");
-		setLogToText("");
 		setPage(0);
 		setAppliedFilters({});
 	};
@@ -374,21 +348,9 @@ export function SendLogsPage() {
 						<label>
 							날짜 (최대 {MAX_LOG_SEARCH_DAYS}일)
 							<div className="log-filter-date-range">
-								<input
-									type="text"
-									placeholder="YYYY-MM-DD"
-									maxLength={10}
-									value={logFromText}
-									onChange={(e) => handleLogFromTextChange(e.target.value)}
-								/>
+								<input type="date" value={logFrom} max={todayStr()} onChange={(e) => handleLogFromChange(e.target.value)} />
 								<span>~</span>
-								<input
-									type="text"
-									placeholder="YYYY-MM-DD"
-									maxLength={10}
-									value={logToText}
-									onChange={(e) => handleLogToTextChange(e.target.value)}
-								/>
+								<input type="date" value={logTo} max={todayStr()} onChange={(e) => handleLogToChange(e.target.value)} />
 							</div>
 						</label>
 						<div className="log-filter-actions">
