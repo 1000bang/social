@@ -1,6 +1,7 @@
 import type {
 	AccountMeResponse,
 	AccountSettingsResponse,
+	AudienceType,
 	ChartBucket,
 	ChartGranularity,
 	CreateTemplateRequest,
@@ -78,8 +79,14 @@ export const api = {
 			method: "PUT",
 			body: JSON.stringify({ activeYn }),
 		}),
-	listSendLogs: (page = 0, size = 10) =>
-		request<PageResponse<SendLogResponse>>(`/api/send-logs?page=${page}&size=${size}`),
+	listSendLogs: (
+		page = 0,
+		size = 10,
+		filters: { templateName?: string; audienceType?: AudienceType; from?: string; to?: string } = {},
+	) => {
+		const query = new URLSearchParams({ page: String(page), size: String(size), ...toStringParams(filters) });
+		return request<PageResponse<SendLogResponse>>(`/api/send-logs?${query.toString()}`);
+	},
 	getSendLogSummary: () => request<SendLogSummaryResponse>("/api/send-logs/summary"),
 	getSendLogChart: (
 		granularity: ChartGranularity,

@@ -2,6 +2,7 @@ package com.mysocial.dispatch
 
 import com.mysocial.auth.CURRENT_ACCOUNT_ID_ATTRIBUTE
 import com.mysocial.common.PageResponse
+import com.mysocial.template.AudienceType
 import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestAttribute
@@ -21,7 +22,11 @@ class SendLogController(
 		@RequestAttribute(CURRENT_ACCOUNT_ID_ATTRIBUTE) accountId: Long,
 		@RequestParam(defaultValue = "0") page: Int,
 		@RequestParam(defaultValue = "10") size: Int,
-	): PageResponse<SendLogResponse> = sendLogService.findByAccount(accountId, page, size)
+		@RequestParam(required = false) templateName: String?,
+		@RequestParam(required = false) audienceType: AudienceType?,
+		@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) from: LocalDate?,
+		@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) to: LocalDate?,
+	): PageResponse<SendLogResponse> = sendLogService.findByAccount(accountId, page, size, templateName, audienceType, from, to)
 
 	@GetMapping("/summary")
 	fun summary(@RequestAttribute(CURRENT_ACCOUNT_ID_ATTRIBUTE) accountId: Long): SendLogSummaryResponse =

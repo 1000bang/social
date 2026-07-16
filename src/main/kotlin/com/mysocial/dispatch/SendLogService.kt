@@ -1,6 +1,7 @@
 package com.mysocial.dispatch
 
 import com.mysocial.common.PageResponse
+import com.mysocial.template.AudienceType
 import com.mysocial.template.TemplateRepository
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
@@ -15,6 +16,7 @@ import java.time.temporal.ChronoUnit
 private val ZONE = ZoneId.of("Asia/Seoul")
 private const val TOP_TEMPLATES_LIMIT = 10
 private const val MAX_DAY_RANGE = 10
+private const val MAX_LOG_SEARCH_DAYS = 31
 
 @Service
 class SendLogService(
@@ -24,9 +26,28 @@ class SendLogService(
 ) {
 
 	@Transactional(readOnly = true)
-	fun findByAccount(accountId: Long, page: Int, size: Int): PageResponse<SendLogResponse> {
+	fun findByAccount(
+		accountId: Long,
+		page: Int,
+		size: Int,
+		templateName: String?,
+		audienceType: AudienceType?,
+		from: LocalDate?,
+		to: LocalDate?,
+	): PageResponse<SendLogResponse> {
+		if (from != null && to != null) {
+			require(!to.isBefore(from)) { "종료일은 시작일보다 빠를 수 없습니다" }
+			require(ChronoUnit.DAYS.between(from, to) <= MAX_LOG_SEARCH_DAYS) { "최대 ${MAX_LOG_SEARCH_DAYS}일까지 조회할 수 있습니다" }
+		}
 		val pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"))
-		return PageResponse.from(sendLogRepository.findByTemplateAccountId(accountId, pageable), SendLogResponse::from)
+		val spec = SendLogSpecifications.search(
+			accountId,
+			templateName?.trim()?.takeIf { it.isNotEmpty() }?.let { "%${it.lowercase()}%" },
+			audienceType,
+			from?.atStartOfDay(ZONE)?.toInstant(),
+			to?.plusDays(1)?.atStartOfDay(ZONE)?.toInstant(),
+		)
+		return PageResponse.from(sendLogRepository.findAll(spec, pageable), SendLogResponse::from)
 	}
 
 	@Transactional(readOnly = true)
