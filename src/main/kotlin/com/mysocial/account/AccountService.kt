@@ -11,6 +11,6 @@ class AccountService(
 	@Transactional(readOnly = true)
 	fun me(accountId: Long): AccountMeResponse {
 		val account = accountRepository.findById(accountId).orElseThrow()
-		return AccountMeResponse(username = account.username, profilePictureUrl = account.profilePictureUrl)
+		return AccountMeResponse(username = account.username, profilePictureUrl = account.profilePictureUrl, status = account.status)
 	}
 }

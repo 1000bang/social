@@ -2,6 +2,7 @@ package com.mysocial.instagram
 
 import com.mysocial.account.AccessTokenRepository
 import com.mysocial.account.AccountRepository
+import com.mysocial.account.TokenRefreshScheduler
 import com.mysocial.account.TokenRefreshStatus
 import com.mysocial.auth.CURRENT_ACCOUNT_ID_ATTRIBUTE
 import org.springframework.web.bind.annotation.GetMapping
@@ -18,7 +19,14 @@ class DebugInstagramController(
 	private val accountRepository: AccountRepository,
 	private val accessTokenRepository: AccessTokenRepository,
 	private val instagramGraphClient: InstagramGraphClient,
+	private val tokenRefreshScheduler: TokenRefreshScheduler,
 ) {
+
+	@PostMapping("/refresh-tokens")
+	fun refreshTokens(): Map<String, String> {
+		tokenRefreshScheduler.refreshExpiringTokens()
+		return mapOf("result" to "실행 완료, 로그를 확인하세요")
+	}
 
 	@GetMapping("/follow-status")
 	fun followStatus(

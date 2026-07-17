@@ -162,6 +162,27 @@ textarea {
 	box-shadow: 0 8px 20px rgba(2, 132, 199, 0.35);
 }
 
+.reauth-banner {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: center;
+	gap: 12px;
+	padding: 10px 16px;
+	background: var(--danger);
+	color: #fff;
+	font-size: 14px;
+	text-align: center;
+}
+
+.reauth-banner button {
+	background: #fff;
+	color: var(--danger);
+	border: none;
+	font-weight: 600;
+	white-space: nowrap;
+}
+
 .navbar {
 	position: relative;
 	display: flex;

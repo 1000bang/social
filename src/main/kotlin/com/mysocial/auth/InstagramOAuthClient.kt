@@ -61,6 +61,19 @@ class InstagramOAuthClient(
 		)
 	}
 
+	// 장기 토큰은 발급 후 24시간이 지나야, 그리고 만료 전에만 갱신할 수 있다. 갱신하면 만료일이 다시 60일 뒤로 늘어난다.
+	fun refreshLongLivedToken(currentToken: String): LongLivedTokenResponse =
+		graphRestClient.get()
+			.uri { builder ->
+				builder.path("/refresh_access_token")
+					.queryParam("grant_type", "ig_refresh_token")
+					.queryParam("access_token", currentToken)
+					.build()
+			}
+			.retrieve()
+			.body(LongLivedTokenResponse::class.java)
+			?: error("토큰 갱신 응답이 비어있습니다")
+
 	fun fetchInstagramAccount(userAccessToken: String, fallbackUserId: String): InstagramAccountInfo {
 		val me = graphRestClient.get()
 			.uri { builder ->

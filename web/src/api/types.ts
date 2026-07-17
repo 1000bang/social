@@ -95,9 +95,12 @@ export interface SendLogInsightResponse {
 	text: string;
 }
 
+export type AccountStatus = "ACTIVE" | "NEEDS_REAUTH" | "DISABLED";
+
 export interface AccountMeResponse {
 	username: string;
 	profilePictureUrl: string | null;
+	status: AccountStatus;
 }
 
 export interface TemplateRankingResponse {

@@ -1,15 +1,43 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, NavLink, Outlet } from "react-router-dom";
+import { api } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 
 export function Layout() {
 	const { logout } = useAuth();
 	const [menuOpen, setMenuOpen] = useState(false);
+	const [needsReauth, setNeedsReauth] = useState(false);
+	const [reconnecting, setReconnecting] = useState(false);
 
 	const navClass = ({ isActive }: { isActive: boolean }) => (isActive ? "active" : "");
 
+	useEffect(() => {
+		api
+			.getMe()
+			.then((me) => setNeedsReauth(me.status === "NEEDS_REAUTH"))
+			.catch(() => setNeedsReauth(false));
+	}, []);
+
+	const handleReconnect = async () => {
+		setReconnecting(true);
+		try {
+			const { url } = await api.getLoginUrl();
+			window.location.href = url;
+		} catch {
+			setReconnecting(false);
+		}
+	};
+
 	return (
 		<div>
+			{needsReauth && (
+				<div className="reauth-banner">
+					Instagram 연결이 끊어졌어요. 자동응답이 멈춘 상태이니 다시 연결해주세요.
+					<button type="button" onClick={handleReconnect} disabled={reconnecting}>
+						{reconnecting ? "이동 중..." : "Instagram 다시 연결하기"}
+					</button>
+				</div>
+			)}
 			<nav className="navbar">
 				<Link className="brand" to="/home">
 					mySocial
