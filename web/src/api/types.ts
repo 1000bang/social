@@ -126,6 +126,8 @@ export interface AccountSettingsResponse {
 	commentReplyText: string | null;
 	nonKeywordCommentReplyText: string | null;
 	nonFollowerMessageText: string | null;
+	followPromptText: string | null;
+	followButtonTitle: string | null;
 	postPickerLimit: number;
 	maxMessagesPerAudience: number;
 }
@@ -134,6 +136,8 @@ export interface UpdateAccountSettingsRequest {
 	commentReplyText?: string | null;
 	nonKeywordCommentReplyText?: string | null;
 	nonFollowerMessageText?: string | null;
+	followPromptText?: string | null;
+	followButtonTitle?: string | null;
 	postPickerLimit: number;
 	maxMessagesPerAudience: number;
 }

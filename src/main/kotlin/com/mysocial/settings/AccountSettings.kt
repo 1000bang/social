@@ -28,6 +28,12 @@ class AccountSettings(
 	@Column(name = "non_follower_message_text", columnDefinition = "TEXT")
 	var nonFollowerMessageText: String? = null,
 
+	@Column(name = "follow_prompt_text", columnDefinition = "TEXT")
+	var followPromptText: String? = null,
+
+	@Column(name = "follow_button_title")
+	var followButtonTitle: String? = null,
+
 	@Column(name = "post_picker_limit", nullable = false)
 	var postPickerLimit: Int = DEFAULT_POST_PICKER_LIMIT,
 
@@ -40,6 +46,9 @@ class AccountSettings(
 	val id: Long = 0
 
 	companion object {
+		const val DEFAULT_FOLLOW_PROMPT_TEXT = "댓글을 남겨주셔서 감사합니다. 저를 팔로우해주셨다면 아래 버튼을 클릭해주세요!"
+		const val DEFAULT_FOLLOW_BUTTON_TITLE = "팔로우했어요"
+
 		const val DEFAULT_POST_PICKER_LIMIT = 5
 		const val MIN_POST_PICKER_LIMIT = 1
 		const val MAX_POST_PICKER_LIMIT = 25

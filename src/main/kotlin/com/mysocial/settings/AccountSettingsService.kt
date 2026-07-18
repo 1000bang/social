@@ -35,6 +35,8 @@ class AccountSettingsService(
 		settings.commentReplyText = request.commentReplyText?.takeIf { it.isNotBlank() }
 		settings.nonKeywordCommentReplyText = request.nonKeywordCommentReplyText?.takeIf { it.isNotBlank() }
 		settings.nonFollowerMessageText = request.nonFollowerMessageText?.takeIf { it.isNotBlank() }
+		settings.followPromptText = request.followPromptText?.takeIf { it.isNotBlank() }
+		settings.followButtonTitle = request.followButtonTitle?.takeIf { it.isNotBlank() }
 		settings.postPickerLimit = request.postPickerLimit
 		settings.maxMessagesPerAudience = request.maxMessagesPerAudience
 
@@ -49,4 +51,14 @@ class AccountSettingsService(
 	fun getMaxMessagesPerAudience(accountId: Long): Int =
 		accountSettingsRepository.findByAccountId(accountId)?.maxMessagesPerAudience
 			?: AccountSettings.DEFAULT_MAX_MESSAGES_PER_AUDIENCE
+
+	@Transactional(readOnly = true)
+	fun getFollowPromptText(accountId: Long): String =
+		accountSettingsRepository.findByAccountId(accountId)?.followPromptText?.takeIf { it.isNotBlank() }
+			?: AccountSettings.DEFAULT_FOLLOW_PROMPT_TEXT
+
+	@Transactional(readOnly = true)
+	fun getFollowButtonTitle(accountId: Long): String =
+		accountSettingsRepository.findByAccountId(accountId)?.followButtonTitle?.takeIf { it.isNotBlank() }
+			?: AccountSettings.DEFAULT_FOLLOW_BUTTON_TITLE
 }

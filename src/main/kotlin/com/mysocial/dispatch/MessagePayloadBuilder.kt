@@ -4,11 +4,10 @@ import com.mysocial.template.MessageType
 import com.mysocial.template.TemplateMessage
 
 const val FOLLOW_CHECK_PAYLOAD_PREFIX = "FOLLOW_CHECK:"
-private const val FOLLOW_BUTTON_TITLE = "팔로우했어요"
 
 object MessagePayloadBuilder {
 
-	fun promptWithFollowButton(text: String, dispatchTargetId: Long): Map<String, Any?> = mapOf(
+	fun promptWithFollowButton(text: String, buttonTitle: String, dispatchTargetId: Long): Map<String, Any?> = mapOf(
 		"attachment" to mapOf(
 			"type" to "template",
 			"payload" to mapOf(
@@ -17,7 +16,7 @@ object MessagePayloadBuilder {
 				"buttons" to listOf(
 					mapOf(
 						"type" to "postback",
-						"title" to FOLLOW_BUTTON_TITLE,
+						"title" to buttonTitle,
 						"payload" to "$FOLLOW_CHECK_PAYLOAD_PREFIX$dispatchTargetId",
 					),
 				),

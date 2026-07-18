@@ -6,6 +6,7 @@ import com.mysocial.config.DispatchProperties
 import com.mysocial.instagram.InstagramErrorClassifier
 import com.mysocial.instagram.InstagramGraphClient
 import com.mysocial.instagram.InstagramMessagingClient
+import com.mysocial.settings.AccountSettingsService
 import com.mysocial.template.AudienceType
 import com.mysocial.template.Template
 import com.mysocial.template.TemplateRepository
@@ -14,8 +15,6 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Duration
 import java.time.Instant
-
-private const val FOLLOW_PROMPT_TEXT = "댓글을 남겨주셔서 감사합니다. 저를 팔로우해주셨다면 아래 버튼을 클릭해주세요!"
 
 // 레이트리밋에 근접해 발송을 미룰 때 쓰는 지연 시간. 실패 후 백오프와 달리 재시도 횟수를 소모하지 않는다.
 private val RATE_LIMIT_DEFER_DELAY: Duration = Duration.ofMinutes(10)
@@ -30,6 +29,7 @@ class DispatchExecutor(
 	private val instagramMessagingClient: InstagramMessagingClient,
 	private val instagramErrorClassifier: InstagramErrorClassifier,
 	private val dispatchProperties: DispatchProperties,
+	private val accountSettingsService: AccountSettingsService,
 ) {
 	private val log = LoggerFactory.getLogger(javaClass)
 
@@ -80,19 +80,22 @@ class DispatchExecutor(
 			return
 		}
 
+		val followPromptText = accountSettingsService.getFollowPromptText(template.account.id)
+		val followButtonTitle = accountSettingsService.getFollowButtonTitle(template.account.id)
+
 		runCatching {
 			if (target.triggerType == TriggerType.COMMENT) {
 				instagramMessagingClient.replyToComment(token, target.platformTriggerId, template.resolvedCommentReplyText())
 				instagramMessagingClient.sendPrivateReply(
 					token,
 					target.platformTriggerId,
-					MessagePayloadBuilder.promptWithFollowButton(FOLLOW_PROMPT_TEXT, target.id),
+					MessagePayloadBuilder.promptWithFollowButton(followPromptText, followButtonTitle, target.id),
 				)
 			} else {
 				instagramMessagingClient.sendDirectMessage(
 					token,
 					target.recipientPlatformUserId,
-					MessagePayloadBuilder.promptWithFollowButton(FOLLOW_PROMPT_TEXT, target.id),
+					MessagePayloadBuilder.promptWithFollowButton(followPromptText, followButtonTitle, target.id),
 				)
 			}
 			target.markAwaitingFollowCheck()

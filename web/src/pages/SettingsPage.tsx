@@ -16,6 +16,8 @@ export function SettingsPage() {
 	const [commentReplyText, setCommentReplyText] = useState("");
 	const [nonKeywordCommentReplyText, setNonKeywordCommentReplyText] = useState("");
 	const [nonFollowerMessageText, setNonFollowerMessageText] = useState("");
+	const [followPromptText, setFollowPromptText] = useState("");
+	const [followButtonTitle, setFollowButtonTitle] = useState("");
 	const [postPickerLimit, setPostPickerLimit] = useState(5);
 	const [maxMessagesPerAudience, setMaxMessagesPerAudience] = useState(3);
 
@@ -23,6 +25,8 @@ export function SettingsPage() {
 		setCommentReplyText(settings.commentReplyText ?? "");
 		setNonKeywordCommentReplyText(settings.nonKeywordCommentReplyText ?? "");
 		setNonFollowerMessageText(settings.nonFollowerMessageText ?? "");
+		setFollowPromptText(settings.followPromptText ?? "");
+		setFollowButtonTitle(settings.followButtonTitle ?? "");
 		setPostPickerLimit(settings.postPickerLimit);
 		setMaxMessagesPerAudience(settings.maxMessagesPerAudience);
 	};
@@ -45,6 +49,8 @@ export function SettingsPage() {
 				commentReplyText,
 				nonKeywordCommentReplyText,
 				nonFollowerMessageText,
+				followPromptText,
+				followButtonTitle,
 				postPickerLimit,
 				maxMessagesPerAudience,
 			});
@@ -97,6 +103,29 @@ export function SettingsPage() {
 							value={nonFollowerMessageText}
 							onChange={(e) => setNonFollowerMessageText(e.target.value)}
 							placeholder="팔로우가 확인되지 않았어요! 팔로우 후 다시 요청 부탁드립니다."
+						/>
+					</label>
+				</fieldset>
+
+				<fieldset className="message-fieldset">
+					<legend>팔로우 확인 메시지 설정</legend>
+					<p className="hint">댓글에 답글을 남긴 뒤 팔로우 여부를 확인하려고 보내는 메시지입니다. 저장 즉시 이후 모든 발송에 적용됩니다.</p>
+
+					<label>
+						팔로우 확인 메시지 문구
+						<input
+							value={followPromptText}
+							onChange={(e) => setFollowPromptText(e.target.value)}
+							placeholder="댓글을 남겨주셔서 감사합니다. 저를 팔로우해주셨다면 아래 버튼을 클릭해주세요!"
+						/>
+					</label>
+
+					<label>
+						확인 버튼 문구
+						<input
+							value={followButtonTitle}
+							onChange={(e) => setFollowButtonTitle(e.target.value)}
+							placeholder="팔로우했어요"
 						/>
 					</label>
 				</fieldset>
