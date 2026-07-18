@@ -151,7 +151,11 @@ class TemplateService(
 			when (input.messageType) {
 				MessageType.TEXT -> require(!input.textContent.isNullOrBlank()) { "텍스트 메시지는 내용이 필요합니다" }
 				MessageType.IMAGE -> require(!input.imageUrl.isNullOrBlank()) { "이미지 메시지는 이미지 URL이 필요합니다" }
-				MessageType.CAROUSEL -> require(input.carouselItems.isNotEmpty()) { "캐러셀 메시지는 최소 1개 아이템이 필요합니다" }
+				MessageType.BUTTON -> {
+					require(!input.textContent.isNullOrBlank()) { "버튼형 메시지는 내용이 필요합니다" }
+					require(input.buttons.isNotEmpty()) { "버튼형 메시지는 최소 1개 버튼이 필요합니다" }
+					require(input.buttons.size <= 3) { "버튼은 최대 3개까지 설정 가능합니다" }
+				}
 			}
 
 			val message = TemplateMessage(
@@ -162,16 +166,13 @@ class TemplateService(
 				textContent = input.textContent,
 				imageUrl = input.imageUrl,
 			)
-			input.carouselItems.forEachIndexed { itemIndex, item ->
-				message.carouselItems.add(
-					CarouselItem(
+			input.buttons.forEachIndexed { buttonIndex, button ->
+				message.buttons.add(
+					MessageButton(
 						templateMessage = message,
-						orderIndex = itemIndex + 1,
-						imageUrl = item.imageUrl,
-						title = item.title,
-						subtitle = item.subtitle,
-						buttonText = item.buttonText,
-						buttonUrl = item.buttonUrl,
+						orderIndex = buttonIndex + 1,
+						title = button.title,
+						url = button.url,
 					),
 				)
 			}

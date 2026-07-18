@@ -20,15 +20,12 @@ data class MessageInput(
 	val messageType: MessageType,
 	val textContent: String? = null,
 	val imageUrl: String? = null,
-	val carouselItems: List<CarouselItemInput> = emptyList(),
+	val buttons: List<ButtonInput> = emptyList(),
 )
 
-data class CarouselItemInput(
-	val imageUrl: String,
-	val title: String? = null,
-	val subtitle: String? = null,
-	val buttonText: String? = null,
-	val buttonUrl: String? = null,
+data class ButtonInput(
+	val title: String,
+	val url: String,
 )
 
 data class TemplateResponse(
@@ -106,14 +103,8 @@ data class TemplateDetailResponse(
 						messageType = message.messageType,
 						textContent = message.textContent,
 						imageUrl = message.imageUrl,
-						carouselItems = message.carouselItems.sortedBy { it.orderIndex }.map { item ->
-							CarouselItemInput(
-								imageUrl = item.imageUrl,
-								title = item.title,
-								subtitle = item.subtitle,
-								buttonText = item.buttonText,
-								buttonUrl = item.buttonUrl,
-							)
+						buttons = message.buttons.sortedBy { it.orderIndex }.map { button ->
+							ButtonInput(title = button.title, url = button.url)
 						},
 					)
 				}

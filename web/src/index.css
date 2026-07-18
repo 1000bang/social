@@ -347,6 +347,33 @@ textarea {
 	margin: 0;
 }
 
+.button-editor {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.button-input-row {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+}
+
+.button-input-row input {
+	flex: 1 1 0;
+	min-width: 0;
+}
+
+@media (max-width: 640px) {
+	.button-input-row {
+		flex-wrap: wrap;
+	}
+
+	.button-input-row input {
+		flex: 1 1 100%;
+	}
+}
+
 .error {
 	color: var(--danger);
 }

@@ -6,24 +6,21 @@ export interface PageResponse<T> {
 	totalPages: number;
 }
 
-export type MessageType = "TEXT" | "IMAGE" | "CAROUSEL";
+export type MessageType = "TEXT" | "IMAGE" | "BUTTON";
 export type AudienceType = "FOLLOWER" | "NON_FOLLOWER";
 export type SendResult = "SUCCESS" | "FAILED";
 export type ChartGranularity = "HOUR" | "DAY" | "MONTH";
 
-export interface CarouselItemInput {
-	imageUrl: string;
-	title?: string;
-	subtitle?: string;
-	buttonText?: string;
-	buttonUrl?: string;
+export interface ButtonInput {
+	title: string;
+	url: string;
 }
 
 export interface MessageInput {
 	messageType: MessageType;
 	textContent?: string;
 	imageUrl?: string;
-	carouselItems?: CarouselItemInput[];
+	buttons?: ButtonInput[];
 }
 
 export interface CreateTemplateRequest {

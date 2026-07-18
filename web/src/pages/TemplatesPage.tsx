@@ -3,6 +3,7 @@ import { api } from "../api/client";
 import { Pagination } from "../components/Pagination";
 import type {
 	AccountSettingsResponse,
+	ButtonInput,
 	CreateTemplateRequest,
 	MessageInput,
 	MessageType,
@@ -10,6 +11,8 @@ import type {
 	TemplateDetailResponse,
 	TemplateResponse,
 } from "../api/types";
+
+const MAX_BUTTONS = 3;
 
 const DEFAULT_MAX_MESSAGES = 3;
 const DEFAULT_NON_FOLLOWER_TEXT = "팔로우가 확인되지 않았어요! 팔로우 후 다시 요청 부탁드립니다.";
@@ -161,6 +164,33 @@ export function TemplatesPage() {
 		setList(list.filter((_, i) => i !== index));
 	};
 
+	const updateButton = (
+		list: MessageInput[],
+		setList: (v: MessageInput[]) => void,
+		messageIndex: number,
+		buttonIndex: number,
+		patch: Partial<ButtonInput>,
+	) => {
+		const buttons = (list[messageIndex].buttons ?? []).map((b, i) => (i === buttonIndex ? { ...b, ...patch } : b));
+		updateMessage(list, setList, messageIndex, { buttons });
+	};
+
+	const addButton = (list: MessageInput[], setList: (v: MessageInput[]) => void, messageIndex: number) => {
+		const buttons = list[messageIndex].buttons ?? [];
+		if (buttons.length >= MAX_BUTTONS) return;
+		updateMessage(list, setList, messageIndex, { buttons: [...buttons, { title: "", url: "" }] });
+	};
+
+	const removeButton = (
+		list: MessageInput[],
+		setList: (v: MessageInput[]) => void,
+		messageIndex: number,
+		buttonIndex: number,
+	) => {
+		const buttons = (list[messageIndex].buttons ?? []).filter((_, i) => i !== buttonIndex);
+		updateMessage(list, setList, messageIndex, { buttons });
+	};
+
 	const handleImageSelect = async (
 		list: MessageInput[],
 		setList: (v: MessageInput[]) => void,
@@ -274,7 +304,7 @@ export function TemplatesPage() {
 						>
 							<option value="TEXT">텍스트</option>
 							<option value="IMAGE">이미지</option>
-							<option value="CAROUSEL">캐러셀</option>
+							<option value="BUTTON">버튼형</option>
 						</select>
 						{message.messageType === "TEXT" && (
 							<textarea
@@ -301,8 +331,38 @@ export function TemplatesPage() {
 								)}
 							</div>
 						)}
-						{message.messageType === "CAROUSEL" && (
-							<p className="hint">캐러셀 아이템 편집은 아직 지원하지 않습니다. 필요하면 API로 직접 생성해주세요.</p>
+						{message.messageType === "BUTTON" && (
+							<div className="button-editor">
+								<textarea
+									placeholder="메시지 내용"
+									value={message.textContent ?? ""}
+									onChange={(e) => updateMessage(list, setList, index, { textContent: e.target.value })}
+								/>
+								{(message.buttons ?? []).map((button, buttonIndex) => (
+									<div key={buttonIndex} className="button-input-row">
+										<input
+											type="text"
+											placeholder="버튼 텍스트"
+											value={button.title}
+											onChange={(e) => updateButton(list, setList, index, buttonIndex, { title: e.target.value })}
+										/>
+										<input
+											type="text"
+											placeholder="이동할 URL"
+											value={button.url}
+											onChange={(e) => updateButton(list, setList, index, buttonIndex, { url: e.target.value })}
+										/>
+										<button type="button" onClick={() => removeButton(list, setList, index, buttonIndex)}>
+											버튼 제거
+										</button>
+									</div>
+								))}
+								{(message.buttons ?? []).length < MAX_BUTTONS && (
+									<button type="button" onClick={() => addButton(list, setList, index)}>
+										+ 버튼 추가 ({(message.buttons ?? []).length}/{MAX_BUTTONS})
+									</button>
+								)}
+							</div>
 						)}
 						{list.length > 1 && (
 							<button type="button" onClick={() => removeMessage(list, setList, index)}>

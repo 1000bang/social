@@ -45,5 +45,5 @@ class TemplateMessage(
 	val id: Long = 0
 
 	@OneToMany(mappedBy = "templateMessage", cascade = [CascadeType.ALL], orphanRemoval = true)
-	val carouselItems: MutableList<CarouselItem> = mutableListOf()
+	val buttons: MutableList<MessageButton> = mutableListOf()
 }

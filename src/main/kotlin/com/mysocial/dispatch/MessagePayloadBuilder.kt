@@ -35,26 +35,17 @@ object MessagePayloadBuilder {
 			),
 		)
 
-		MessageType.CAROUSEL -> mapOf(
+		MessageType.BUTTON -> mapOf(
 			"attachment" to mapOf(
 				"type" to "template",
 				"payload" to mapOf(
-					"template_type" to "generic",
-					"elements" to message.carouselItems.sortedBy { it.orderIndex }.map { item ->
-						mapOf(
-							"title" to (item.title ?: ""),
-							"image_url" to item.imageUrl,
-							"subtitle" to item.subtitle,
-							"buttons" to buttonsFor(item.buttonText, item.buttonUrl),
-						)
+					"template_type" to "button",
+					"text" to (message.textContent ?: ""),
+					"buttons" to message.buttons.sortedBy { it.orderIndex }.map { button ->
+						mapOf("type" to "web_url", "url" to button.url, "title" to button.title)
 					},
 				),
 			),
 		)
-	}
-
-	private fun buttonsFor(buttonText: String?, buttonUrl: String?): List<Map<String, Any?>>? {
-		if (buttonText == null || buttonUrl == null) return null
-		return listOf(mapOf("type" to "web_url", "url" to buttonUrl, "title" to buttonText))
 	}
 }

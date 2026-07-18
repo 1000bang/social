@@ -8,5 +8,5 @@ enum class AudienceType {
 enum class MessageType {
 	TEXT,
 	IMAGE,
-	CAROUSEL,
+	BUTTON,
 }

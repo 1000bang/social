@@ -12,8 +12,8 @@ import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
 
 @Entity
-@Table(name = "carousel_item")
-class CarouselItem(
+@Table(name = "message_button")
+class MessageButton(
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "template_message_id", nullable = false)
 	val templateMessage: TemplateMessage,
@@ -21,20 +21,12 @@ class CarouselItem(
 	@Column(name = "order_index", nullable = false)
 	val orderIndex: Int,
 
-	@Column(name = "image_url", nullable = false)
-	val imageUrl: String,
+	@Column(nullable = false)
+	val title: String,
 
-	val title: String? = null,
-
-	val subtitle: String? = null,
-
-	@Column(name = "button_text")
-	val buttonText: String? = null,
-
-	@Column(name = "button_url")
-	val buttonUrl: String? = null,
+	@Column(nullable = false)
+	val url: String,
 ) : BaseTimeEntity() {
-
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	val id: Long = 0
