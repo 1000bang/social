@@ -21,6 +21,25 @@ function emptyMessage(): MessageInput {
 	return { messageType: "TEXT", textContent: "" };
 }
 
+function isValidButtonUrl(url: string): boolean {
+	try {
+		const parsed = new URL(url);
+		return parsed.protocol === "http:" || parsed.protocol === "https:";
+	} catch {
+		return false;
+	}
+}
+
+function findInvalidButtonUrl(list: MessageInput[]): string | null {
+	for (const message of list) {
+		if (message.messageType !== "BUTTON") continue;
+		for (const button of message.buttons ?? []) {
+			if (!isValidButtonUrl(button.url)) return button.url;
+		}
+	}
+	return null;
+}
+
 export function TemplatesPage() {
 	const [templates, setTemplates] = useState<TemplateResponse[]>([]);
 	const [loading, setLoading] = useState(true);
@@ -230,6 +249,12 @@ export function TemplatesPage() {
 			return;
 		}
 
+		const invalidUrl = findInvalidButtonUrl(followerMessages) ?? findInvalidButtonUrl(nonFollowerMessages);
+		if (invalidUrl !== null) {
+			setFormError(`버튼 URL은 http:// 또는 https://로 시작하는 올바른 URL이어야 합니다: ${invalidUrl || "(빈 값)"}`);
+			return;
+		}
+
 		setSubmitting(true);
 		const body: CreateTemplateRequest = {
 			name,
@@ -338,25 +363,31 @@ export function TemplatesPage() {
 									value={message.textContent ?? ""}
 									onChange={(e) => updateMessage(list, setList, index, { textContent: e.target.value })}
 								/>
-								{(message.buttons ?? []).map((button, buttonIndex) => (
-									<div key={buttonIndex} className="button-input-row">
-										<input
-											type="text"
-											placeholder="버튼 텍스트"
-											value={button.title}
-											onChange={(e) => updateButton(list, setList, index, buttonIndex, { title: e.target.value })}
-										/>
-										<input
-											type="text"
-											placeholder="이동할 URL"
-											value={button.url}
-											onChange={(e) => updateButton(list, setList, index, buttonIndex, { url: e.target.value })}
-										/>
-										<button type="button" onClick={() => removeButton(list, setList, index, buttonIndex)}>
-											버튼 제거
-										</button>
-									</div>
-								))}
+								{(message.buttons ?? []).map((button, buttonIndex) => {
+									const urlInvalid = button.url.length > 0 && !isValidButtonUrl(button.url);
+									return (
+										<div key={buttonIndex} className="button-item">
+											<div className="button-input-row">
+												<input
+													type="text"
+													placeholder="버튼 텍스트"
+													value={button.title}
+													onChange={(e) => updateButton(list, setList, index, buttonIndex, { title: e.target.value })}
+												/>
+												<input
+													type="text"
+													placeholder="이동할 URL (http:// 또는 https://)"
+													value={button.url}
+													onChange={(e) => updateButton(list, setList, index, buttonIndex, { url: e.target.value })}
+												/>
+												<button type="button" onClick={() => removeButton(list, setList, index, buttonIndex)}>
+													버튼 제거
+												</button>
+											</div>
+											{urlInvalid && <p className="hint error">http:// 또는 https://로 시작하는 URL을 입력해주세요</p>}
+										</div>
+									);
+								})}
 								{(message.buttons ?? []).length < MAX_BUTTONS && (
 									<button type="button" onClick={() => addButton(list, setList, index)}>
 										+ 버튼 추가 ({(message.buttons ?? []).length}/{MAX_BUTTONS})

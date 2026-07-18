@@ -353,6 +353,12 @@ textarea {
 	gap: 8px;
 }
 
+.button-item {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
 .button-input-row {
 	display: flex;
 	gap: 8px;

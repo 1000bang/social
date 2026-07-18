@@ -11,6 +11,7 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.net.URI
 
 @Service
 class TemplateService(
@@ -127,6 +128,11 @@ class TemplateService(
 		templateRepository.deleteById(id)
 	}
 
+	private fun isValidButtonUrl(url: String): Boolean {
+		val uri = runCatching { URI(url) }.getOrNull() ?: return false
+		return uri.scheme == "http" || uri.scheme == "https"
+	}
+
 	private fun ensurePostNotTaken(postId: Long, excludeTemplateId: Long? = null) {
 		val taken = if (excludeTemplateId != null) {
 			templateRepository.existsByPostIdAndIdNot(postId, excludeTemplateId)
@@ -155,6 +161,9 @@ class TemplateService(
 					require(!input.textContent.isNullOrBlank()) { "버튼형 메시지는 내용이 필요합니다" }
 					require(input.buttons.isNotEmpty()) { "버튼형 메시지는 최소 1개 버튼이 필요합니다" }
 					require(input.buttons.size <= 3) { "버튼은 최대 3개까지 설정 가능합니다" }
+					input.buttons.forEach { button ->
+						require(isValidButtonUrl(button.url)) { "버튼 URL은 http:// 또는 https://로 시작하는 올바른 URL이어야 합니다: ${button.url}" }
+					}
 				}
 			}
 
