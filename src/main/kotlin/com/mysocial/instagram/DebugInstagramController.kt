@@ -5,7 +5,9 @@ import com.mysocial.account.AccountRepository
 import com.mysocial.account.TokenRefreshScheduler
 import com.mysocial.account.TokenRefreshStatus
 import com.mysocial.auth.CURRENT_ACCOUNT_ID_ATTRIBUTE
+import com.mysocial.dispatch.DispatchExecutor
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestAttribute
 import org.springframework.web.bind.annotation.RequestMapping
@@ -20,11 +22,25 @@ class DebugInstagramController(
 	private val accessTokenRepository: AccessTokenRepository,
 	private val instagramGraphClient: InstagramGraphClient,
 	private val tokenRefreshScheduler: TokenRefreshScheduler,
+	private val dispatchExecutor: DispatchExecutor,
 ) {
 
 	@PostMapping("/refresh-tokens")
 	fun refreshTokens(): Map<String, String> {
 		tokenRefreshScheduler.refreshExpiringTokens()
+		return mapOf("result" to "실행 완료, 로그를 확인하세요")
+	}
+
+	// 크론을 기다리지 않고 특정 발송 대상을 즉시 (재)시도해볼 때 사용
+	@PostMapping("/dispatch/{dispatchTargetId}/send-initial-prompt")
+	fun sendInitialPrompt(@PathVariable dispatchTargetId: Long): Map<String, String> {
+		dispatchExecutor.sendInitialPrompt(dispatchTargetId)
+		return mapOf("result" to "실행 완료, 로그를 확인하세요")
+	}
+
+	@PostMapping("/dispatch/{dispatchTargetId}/retry")
+	fun retryDispatch(@PathVariable dispatchTargetId: Long): Map<String, String> {
+		dispatchExecutor.retryDispatch(dispatchTargetId)
 		return mapOf("result" to "실행 완료, 로그를 확인하세요")
 	}
 

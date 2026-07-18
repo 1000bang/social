@@ -1,6 +1,7 @@
 package com.mysocial.dispatch
 
 import com.mysocial.common.BaseTimeEntity
+import com.mysocial.template.AudienceType
 import com.mysocial.template.Template
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
@@ -50,22 +51,60 @@ class DispatchTarget(
 	var processedAt: Instant? = null
 		protected set
 
+	@Enumerated(EnumType.STRING)
+	@Column(name = "retry_stage")
+	var retryStage: DispatchStage? = null
+		protected set
+
+	@Enumerated(EnumType.STRING)
+	@Column(name = "retry_audience_type")
+	var retryAudienceType: AudienceType? = null
+		protected set
+
+	@Column(name = "retry_count", nullable = false, columnDefinition = "integer default 0")
+	var retryCount: Int = 0
+		protected set
+
+	@Column(name = "next_retry_at")
+	var nextRetryAt: Instant? = null
+		protected set
+
 	fun markAwaitingFollowCheck() {
 		status = DispatchStatus.AWAITING_FOLLOW_CHECK
+		clearRetry()
 	}
 
 	fun markSent(at: Instant) {
 		status = DispatchStatus.SENT
 		processedAt = at
+		clearRetry()
 	}
 
 	fun markNonFollowerSent(at: Instant) {
 		status = DispatchStatus.NON_FOLLOWER_SENT
 		processedAt = at
+		clearRetry()
 	}
 
 	fun markFailed(at: Instant) {
 		status = DispatchStatus.FAILED
 		processedAt = at
+		clearRetry()
+	}
+
+	// 레이트리밋 등 일시적 오류로 재시도가 필요할 때 호출. audienceType은 팔로우 분기 발송 단계에서만 사용된다.
+	// countsAsAttempt=false는 실제로 시도해서 실패한 게 아니라, 한도 초과를 예측하고 선제적으로 미룬 경우(재시도 횟수를 소모하지 않음).
+	fun markRetryPending(stage: DispatchStage, at: Instant, audienceType: AudienceType? = null, countsAsAttempt: Boolean = true) {
+		status = DispatchStatus.RETRY_PENDING
+		retryStage = stage
+		retryAudienceType = audienceType
+		if (countsAsAttempt) retryCount += 1
+		nextRetryAt = at
+	}
+
+	private fun clearRetry() {
+		retryStage = null
+		retryAudienceType = null
+		nextRetryAt = null
 	}
 }

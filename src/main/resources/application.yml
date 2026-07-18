@@ -44,3 +44,7 @@ app:
     jwt-expiration-days: ${JWT_EXPIRATION_DAYS:30}
   server:
     public-base-url: ${PUBLIC_BASE_URL:https://social.1000bang.info}
+  dispatch:
+    # Meta 실제 한도보다 낮춘 안전 마진. 필요 시 환경변수로 조정
+    hourly-send-limit: ${DISPATCH_HOURLY_SEND_LIMIT:180}
+    max-retry-count: ${DISPATCH_MAX_RETRY_COUNT:5}

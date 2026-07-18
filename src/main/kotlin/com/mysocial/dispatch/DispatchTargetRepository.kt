@@ -14,6 +14,8 @@ interface DispatchTargetRepository : JpaRepository<DispatchTarget, Long> {
 
 	fun findByStatusAndTemplateId(status: DispatchStatus, templateId: Long): List<DispatchTarget>
 
+	fun findByStatusAndNextRetryAtBefore(status: DispatchStatus, before: Instant): List<DispatchTarget>
+
 	fun deleteByTemplateId(templateId: Long)
 
 	@Query(
