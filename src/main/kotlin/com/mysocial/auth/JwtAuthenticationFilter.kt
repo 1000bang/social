@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component
 import org.springframework.web.filter.OncePerRequestFilter
 
 const val CURRENT_ACCOUNT_ID_ATTRIBUTE = "accountId"
+const val ACCESS_TOKEN_COOKIE_NAME = "accessToken"
 
 @Component
 class JwtAuthenticationFilter(
@@ -26,8 +27,7 @@ class JwtAuthenticationFilter(
 	}
 
 	override fun doFilterInternal(request: HttpServletRequest, response: HttpServletResponse, filterChain: FilterChain) {
-		val header = request.getHeader("Authorization")
-		val token = header?.takeIf { it.startsWith("Bearer ") }?.removePrefix("Bearer ")
+		val token = request.cookies?.firstOrNull { it.name == ACCESS_TOKEN_COOKIE_NAME }?.value
 		val accountId = token?.let { jwtService.parseAccountId(it) }
 
 		if (accountId == null) {

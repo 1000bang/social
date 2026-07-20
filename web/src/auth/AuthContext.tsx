@@ -1,28 +1,27 @@
-import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
-import { clearToken, getToken, setToken as saveToken } from "../api/client";
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
+import { api, checkAuthenticated } from "../api/client";
 
 interface AuthContextValue {
-	isAuthenticated: boolean;
-	login: (token: string) => void;
+	isAuthenticated: boolean | null;
 	logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-	const [isAuthenticated, setIsAuthenticated] = useState(() => getToken() !== null);
+	const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
-	const login = useCallback((token: string) => {
-		saveToken(token);
-		setIsAuthenticated(true);
+	useEffect(() => {
+		checkAuthenticated().then(setIsAuthenticated);
 	}, []);
 
 	const logout = useCallback(() => {
-		clearToken();
-		setIsAuthenticated(false);
+		api.logout().finally(() => setIsAuthenticated(false));
 	}, []);
 
-	return <AuthContext.Provider value={{ isAuthenticated, login, logout }}>{children}</AuthContext.Provider>;
+	if (isAuthenticated === null) return <div className="centered-page">불러오는 중...</div>;
+
+	return <AuthContext.Provider value={{ isAuthenticated, logout }}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth(): AuthContextValue {

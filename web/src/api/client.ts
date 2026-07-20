@@ -18,31 +18,19 @@ import type {
 	UpdateAccountSettingsRequest,
 } from "./types";
 
-const TOKEN_KEY = "mysocial_jwt";
-
-export function getToken(): string | null {
-	return localStorage.getItem(TOKEN_KEY);
-}
-
-export function setToken(token: string): void {
-	localStorage.setItem(TOKEN_KEY, token);
-}
-
-export function clearToken(): void {
-	localStorage.removeItem(TOKEN_KEY);
+export async function checkAuthenticated(): Promise<boolean> {
+	const res = await fetch("/api/account/me", { credentials: "same-origin" });
+	return res.ok;
 }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-	const token = getToken();
 	const headers = new Headers(options.headers);
 	const isFormData = options.body instanceof FormData;
 	if (!isFormData) headers.set("Content-Type", "application/json");
-	if (token) headers.set("Authorization", `Bearer ${token}`);
 
-	const res = await fetch(path, { ...options, headers });
+	const res = await fetch(path, { ...options, headers, credentials: "same-origin" });
 
 	if (res.status === 401) {
-		clearToken();
 		window.location.href = "/login";
 		throw new Error("인증이 만료되었습니다");
 	}
@@ -66,6 +54,7 @@ function toStringParams(params: Record<string, string | number | undefined>): Re
 
 export const api = {
 	getLoginUrl: () => request<{ url: string }>("/api/auth/instagram/login-url"),
+	logout: () => request<void>("/api/auth/logout", { method: "POST" }),
 	listTemplates: (page = 0, size = 10) =>
 		request<PageResponse<TemplateResponse>>(`/api/templates?page=${page}&size=${size}`),
 	createTemplate: (body: CreateTemplateRequest) =>

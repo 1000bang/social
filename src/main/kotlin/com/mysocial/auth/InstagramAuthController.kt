@@ -7,11 +7,15 @@ import com.mysocial.account.AccessToken
 import com.mysocial.account.AccessTokenRepository
 import com.mysocial.account.TokenRefreshStatus
 import com.mysocial.common.SocialPlatform
+import com.mysocial.config.AppServerProperties
+import com.mysocial.config.AuthProperties
 import com.mysocial.config.MetaAppProperties
 import com.mysocial.instagram.InstagramGraphClient
 import com.mysocial.instagram.WEBHOOK_SUBSCRIBED_FIELDS
 import org.slf4j.LoggerFactory
+import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
+import org.springframework.http.ResponseCookie
 import org.springframework.http.ResponseEntity
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.bind.annotation.GetMapping
@@ -20,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import java.net.URI
 import java.net.URLEncoder
+import java.time.Duration
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.UUID
@@ -34,6 +39,8 @@ class InstagramAuthController(
 	private val accessTokenRepository: AccessTokenRepository,
 	private val jwtService: JwtService,
 	private val metaAppProperties: MetaAppProperties,
+	private val authProperties: AuthProperties,
+	private val appServerProperties: AppServerProperties,
 	private val instagramGraphClient: InstagramGraphClient,
 ) {
 	private val log = LoggerFactory.getLogger(javaClass)
@@ -47,6 +54,7 @@ class InstagramAuthController(
 	@GetMapping("/callback")
 	@Transactional
 	fun callback(@RequestParam code: String): ResponseEntity<Void> {
+		var accessTokenCookie: ResponseCookie? = null
 		val redirectUri = runCatching {
 			val tokenResult = instagramOAuthClient.exchangeCodeForLongLivedToken(code)
 			val igAccount = instagramOAuthClient.fetchInstagramAccount(tokenResult.longLivedToken, tokenResult.instagramUserId)
@@ -83,13 +91,22 @@ class InstagramAuthController(
 			}
 
 			val jwt = jwtService.issueToken(account.id)
-			"${metaAppProperties.webAuthCallbackUrl}?token=${encode(jwt)}"
+			accessTokenCookie = ResponseCookie.from(ACCESS_TOKEN_COOKIE_NAME, jwt)
+				.httpOnly(true)
+				.secure(authProperties.cookieSecure)
+				.sameSite("Lax")
+				.path("/")
+				.maxAge(Duration.ofDays(authProperties.jwtExpirationDays))
+				.build()
+			"${appServerProperties.publicBaseUrl}/home"
 		}.getOrElse { ex ->
 			log.warn("Instagram OAuth 콜백 처리 실패", ex)
 			"${metaAppProperties.webAuthCallbackUrl}?error=${encode(ex.message ?: "unknown_error")}"
 		}
 
-		return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(redirectUri)).build()
+		val responseBuilder = ResponseEntity.status(HttpStatus.FOUND).location(URI.create(redirectUri))
+		accessTokenCookie?.let { responseBuilder.header(HttpHeaders.SET_COOKIE, it.toString()) }
+		return responseBuilder.build()
 	}
 
 	private fun encode(value: String): String = URLEncoder.encode(value, Charsets.UTF_8)
