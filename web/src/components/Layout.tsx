@@ -1,22 +1,15 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, NavLink, Outlet } from "react-router-dom";
 import { api } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 
 export function Layout() {
-	const { logout } = useAuth();
+	const { logout, me } = useAuth();
 	const [menuOpen, setMenuOpen] = useState(false);
-	const [needsReauth, setNeedsReauth] = useState(false);
 	const [reconnecting, setReconnecting] = useState(false);
+	const needsReauth = me?.status === "NEEDS_REAUTH";
 
 	const navClass = ({ isActive }: { isActive: boolean }) => (isActive ? "active" : "");
-
-	useEffect(() => {
-		api
-			.getMe()
-			.then((me) => setNeedsReauth(me.status === "NEEDS_REAUTH"))
-			.catch(() => setNeedsReauth(false));
-	}, []);
 
 	const handleReconnect = async () => {
 		setReconnecting(true);

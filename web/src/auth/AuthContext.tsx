@@ -1,9 +1,11 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
-import { api, checkAuthenticated } from "../api/client";
+import { api, fetchAccountMe } from "../api/client";
+import type { AccountMeResponse } from "../api/types";
 
 interface AuthContextValue {
 	isAuthenticated: boolean | null;
-	refresh: () => Promise<void>;
+	me: AccountMeResponse | null;
+	refresh: () => Promise<boolean>;
 	logout: () => void;
 }
 
@@ -11,25 +13,31 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
 	const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+	const [me, setMe] = useState<AccountMeResponse | null>(null);
+
+	// 계정 정보를 여기서 한 번만 가져와서 Layout/HomePage 등이 각자 다시 호출하지 않고 재사용한다.
+	// (로그인 직후 여러 곳이 동시에 /api/account/me를 호출하면서 생기던 경합 문제의 원인이었다.)
+	const refresh = useCallback(async (): Promise<boolean> => {
+		const result = await fetchAccountMe();
+		setMe(result);
+		setIsAuthenticated(result !== null);
+		return result !== null;
+	}, []);
 
 	useEffect(() => {
-		checkAuthenticated().then(setIsAuthenticated);
-	}, []);
-
-	// 팝업으로 로그인을 완료했을 때는 페이지가 새로고침되지 않아 이 값이 저절로 갱신되지 않는다.
-	// 그래서 로그인 성공 후 명시적으로 다시 확인해야 한다.
-	const refresh = useCallback(async () => {
-		const authenticated = await checkAuthenticated();
-		setIsAuthenticated(authenticated);
-	}, []);
+		refresh();
+	}, [refresh]);
 
 	const logout = useCallback(() => {
-		api.logout().finally(() => setIsAuthenticated(false));
+		api.logout().finally(() => {
+			setMe(null);
+			setIsAuthenticated(false);
+		});
 	}, []);
 
 	if (isAuthenticated === null) return <div className="centered-page">불러오는 중...</div>;
 
-	return <AuthContext.Provider value={{ isAuthenticated, refresh, logout }}>{children}</AuthContext.Provider>;
+	return <AuthContext.Provider value={{ isAuthenticated, me, refresh, logout }}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth(): AuthContextValue {

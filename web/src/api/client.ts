@@ -43,9 +43,10 @@ async function fetchWithAuth(path: string, options: RequestInit = {}): Promise<R
 	return fetch(path, { ...options, credentials: "same-origin" });
 }
 
-export async function checkAuthenticated(): Promise<boolean> {
+export async function fetchAccountMe(): Promise<AccountMeResponse | null> {
 	const res = await fetchWithAuth("/api/account/me");
-	return res.ok;
+	if (!res.ok) return null;
+	return res.json();
 }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {

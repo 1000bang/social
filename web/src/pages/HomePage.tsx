@@ -1,13 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
-import type {
-	AccountMeResponse,
-	RecoveryCardResponse,
-	SendLogResponse,
-	SendLogSummaryResponse,
-	TemplateRankingResponse,
-} from "../api/types";
+import { useAuth } from "../auth/AuthContext";
+import type { RecoveryCardResponse, SendLogResponse, SendLogSummaryResponse, TemplateRankingResponse } from "../api/types";
 
 const INSIGHT_DISPLAY_COUNT = 2;
 
@@ -28,17 +23,13 @@ const QUICK_LINKS = [
 ];
 
 export function HomePage() {
-	const [me, setMe] = useState<AccountMeResponse | null>(null);
+	const { me } = useAuth();
 	const [summary, setSummary] = useState<SendLogSummaryResponse | null>(null);
 	const [insights, setInsights] = useState<string[]>([]);
 	const [topTemplates, setTopTemplates] = useState<TemplateRankingResponse[]>([]);
 	const [recentLogs, setRecentLogs] = useState<SendLogResponse[]>([]);
 	const [templateCount, setTemplateCount] = useState<number | null>(null);
 	const [unprocessedCount, setUnprocessedCount] = useState<number | null>(null);
-
-	useEffect(() => {
-		api.getMe().then(setMe).catch(() => setMe(null));
-	}, []);
 
 	useEffect(() => {
 		api.getSendLogSummary().then(setSummary).catch(() => setSummary(null));

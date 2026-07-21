@@ -21,8 +21,12 @@ export function LoginPage() {
 			if (event.data?.type !== "instagram-login") return;
 			setLoading(false);
 			if (event.data.status === "success") {
-				await refresh();
-				navigate("/home", { replace: true });
+				const authenticated = await refresh();
+				if (authenticated) {
+					navigate("/home", { replace: true });
+				} else {
+					setError("로그인 확인에 실패했습니다. 다시 시도해주세요.");
+				}
 			} else {
 				setError(event.data.message ?? "로그인에 실패했습니다");
 			}
