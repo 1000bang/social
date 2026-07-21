@@ -19,7 +19,7 @@ class InstagramOAuthClient(
 	private val graphRestClient = RestClient.create("https://graph.instagram.com")
 
 	fun buildAuthorizationUrl(state: String): String =
-		"https://www.instagram.com/oauth/authorize" +
+		"https://api.instagram.com/oauth/authorize" +
 			"?client_id=${metaAppProperties.appId}" +
 			"&redirect_uri=${encode(metaAppProperties.redirectUri)}" +
 			"&response_type=code" +
