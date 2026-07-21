@@ -18,13 +18,23 @@ class InstagramOAuthClient(
 	private val authRestClient = RestClient.create("https://api.instagram.com")
 	private val graphRestClient = RestClient.create("https://graph.instagram.com")
 
-	fun buildAuthorizationUrl(state: String): String =
-		"https://api.instagram.com/oauth/authorize" +
-			"?client_id=${metaAppProperties.appId}" +
-			"&redirect_uri=${encode(metaAppProperties.redirectUri)}" +
+	// 모바일에서 /oauth/authorize로 바로 가면 중간에 인스타그램 앱으로 전환되며 콜백이 끊기는 문제가 있었다.
+	// 동일 증상 없이 동작하는 타사 서비스의 로그인 URL 구조(accounts/login/?next=.../oauth/authorize/third_party/...&enable_fb_login=0)를
+	// 그대로 재현한 것으로, Meta 공식 문서에 명시된 방식은 아니다.
+	fun buildAuthorizationUrl(state: String): String {
+		val nextPath = "/oauth/authorize/third_party/" +
+			"?redirect_uri=${encode(metaAppProperties.redirectUri)}" +
 			"&response_type=code" +
 			"&scope=${encode(metaAppProperties.oauthScopes)}" +
-			"&state=${encode(state)}"
+			"&state=${encode(state)}" +
+			"&enable_fb_login=0" +
+			"&client_id=${metaAppProperties.appId}"
+
+		return "https://www.instagram.com/accounts/login/" +
+			"?force_authentication" +
+			"&platform_app_id=${metaAppProperties.appId}" +
+			"&next=${encode(nextPath)}"
+	}
 
 	fun exchangeCodeForLongLivedToken(code: String): InstagramTokenResult {
 		val formData = LinkedMultiValueMap<String, String>().apply {
