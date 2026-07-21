@@ -10,7 +10,6 @@ import org.springframework.stereotype.Component
 import org.springframework.web.filter.OncePerRequestFilter
 
 const val CURRENT_ACCOUNT_ID_ATTRIBUTE = "accountId"
-const val ACCESS_TOKEN_COOKIE_NAME = "accessToken"
 
 @Component
 class JwtAuthenticationFilter(

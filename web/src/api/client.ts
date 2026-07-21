@@ -18,8 +18,33 @@ import type {
 	UpdateAccountSettingsRequest,
 } from "./types";
 
+let refreshPromise: Promise<boolean> | null = null;
+
+// 여러 요청이 동시에 401을 맞아도 실제 /api/auth/refresh 호출은 한 번만 나가도록 묶는다.
+// 그렇지 않으면 병렬 refresh 시도가 서로를 "재사용된 토큰"으로 오인해 정상 세션을 무효화시킬 수 있다.
+function refreshAccessToken(): Promise<boolean> {
+	if (!refreshPromise) {
+		refreshPromise = fetch("/api/auth/refresh", { method: "POST", credentials: "same-origin" })
+			.then((res) => res.ok)
+			.finally(() => {
+				refreshPromise = null;
+			});
+	}
+	return refreshPromise;
+}
+
+async function fetchWithAuth(path: string, options: RequestInit = {}): Promise<Response> {
+	const res = await fetch(path, { ...options, credentials: "same-origin" });
+	if (res.status !== 401) return res;
+
+	const refreshed = await refreshAccessToken();
+	if (!refreshed) return res;
+
+	return fetch(path, { ...options, credentials: "same-origin" });
+}
+
 export async function checkAuthenticated(): Promise<boolean> {
-	const res = await fetch("/api/account/me", { credentials: "same-origin" });
+	const res = await fetchWithAuth("/api/account/me");
 	return res.ok;
 }
 
@@ -28,7 +53,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 	const isFormData = options.body instanceof FormData;
 	if (!isFormData) headers.set("Content-Type", "application/json");
 
-	const res = await fetch(path, { ...options, headers, credentials: "same-origin" });
+	const res = await fetchWithAuth(path, { ...options, headers });
 
 	if (res.status === 401) {
 		window.location.href = "/login";

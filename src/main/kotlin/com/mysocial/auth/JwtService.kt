@@ -20,7 +20,7 @@ class JwtService(
 		return Jwts.builder()
 			.subject(accountId.toString())
 			.issuedAt(Date.from(now))
-			.expiration(Date.from(now.plus(authProperties.jwtExpirationDays, ChronoUnit.DAYS)))
+			.expiration(Date.from(now.plus(authProperties.jwtExpirationMinutes, ChronoUnit.MINUTES)))
 			.signWith(key)
 			.compact()
 	}

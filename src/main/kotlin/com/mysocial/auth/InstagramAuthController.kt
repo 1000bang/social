@@ -8,7 +8,6 @@ import com.mysocial.account.AccessTokenRepository
 import com.mysocial.account.TokenRefreshStatus
 import com.mysocial.common.SocialPlatform
 import com.mysocial.config.AppServerProperties
-import com.mysocial.config.AuthProperties
 import com.mysocial.config.MetaAppProperties
 import com.mysocial.instagram.InstagramGraphClient
 import com.mysocial.instagram.WEBHOOK_SUBSCRIBED_FIELDS
@@ -24,7 +23,6 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import java.net.URI
 import java.net.URLEncoder
-import java.time.Duration
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.UUID
@@ -38,8 +36,9 @@ class InstagramAuthController(
 	private val accountRepository: AccountRepository,
 	private val accessTokenRepository: AccessTokenRepository,
 	private val jwtService: JwtService,
+	private val refreshTokenService: RefreshTokenService,
+	private val authCookieFactory: AuthCookieFactory,
 	private val metaAppProperties: MetaAppProperties,
-	private val authProperties: AuthProperties,
 	private val appServerProperties: AppServerProperties,
 	private val instagramGraphClient: InstagramGraphClient,
 ) {
@@ -55,6 +54,7 @@ class InstagramAuthController(
 	@Transactional
 	fun callback(@RequestParam code: String): ResponseEntity<Void> {
 		var accessTokenCookie: ResponseCookie? = null
+		var refreshTokenCookie: ResponseCookie? = null
 		val redirectUri = runCatching {
 			val tokenResult = instagramOAuthClient.exchangeCodeForLongLivedToken(code)
 			val igAccount = instagramOAuthClient.fetchInstagramAccount(tokenResult.longLivedToken, tokenResult.instagramUserId)
@@ -91,13 +91,9 @@ class InstagramAuthController(
 			}
 
 			val jwt = jwtService.issueToken(account.id)
-			accessTokenCookie = ResponseCookie.from(ACCESS_TOKEN_COOKIE_NAME, jwt)
-				.httpOnly(true)
-				.secure(authProperties.cookieSecure)
-				.sameSite("Lax")
-				.path("/")
-				.maxAge(Duration.ofDays(authProperties.jwtExpirationDays))
-				.build()
+			val refreshToken = refreshTokenService.issue(account.id)
+			accessTokenCookie = authCookieFactory.accessTokenCookie(jwt)
+			refreshTokenCookie = authCookieFactory.refreshTokenCookie(refreshToken)
 			"${appServerProperties.publicBaseUrl}/home"
 		}.getOrElse { ex ->
 			log.warn("Instagram OAuth 콜백 처리 실패", ex)
@@ -106,6 +102,7 @@ class InstagramAuthController(
 
 		val responseBuilder = ResponseEntity.status(HttpStatus.FOUND).location(URI.create(redirectUri))
 		accessTokenCookie?.let { responseBuilder.header(HttpHeaders.SET_COOKIE, it.toString()) }
+		refreshTokenCookie?.let { responseBuilder.header(HttpHeaders.SET_COOKIE, it.toString()) }
 		return responseBuilder.build()
 	}
 
