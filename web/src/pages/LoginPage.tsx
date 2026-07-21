@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../auth/AuthContext";
 import { api } from "../api/client";
 
 const FEATURES = ["댓글 키워드 자동 응답", "DM 키워드 자동 응답", "발송 통계 & 인사이트"];
@@ -8,15 +9,19 @@ export function LoginPage() {
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const navigate = useNavigate();
+	const { refresh } = useAuth();
 
 	// 모바일에서 인스타그램 로그인 URL로 전체 페이지 이동하면 OS가 인스타그램 앱으로 가로채서
 	// 콜백이 끊기는 문제가 있어, 팝업으로 열고 postMessage로 완료를 전달받는다.
+	// 팝업은 페이지를 새로고침하지 않으므로, 인증 상태를 명시적으로 갱신한 뒤에 이동해야 한다
+	// (안 그러면 ProtectedRoute가 로그인 전 상태를 그대로 보고 다시 /login으로 돌려보낸다).
 	useEffect(() => {
-		const handleMessage = (event: MessageEvent) => {
+		const handleMessage = async (event: MessageEvent) => {
 			if (event.origin !== window.location.origin) return;
 			if (event.data?.type !== "instagram-login") return;
 			setLoading(false);
 			if (event.data.status === "success") {
+				await refresh();
 				navigate("/home", { replace: true });
 			} else {
 				setError(event.data.message ?? "로그인에 실패했습니다");
@@ -24,7 +29,7 @@ export function LoginPage() {
 		};
 		window.addEventListener("message", handleMessage);
 		return () => window.removeEventListener("message", handleMessage);
-	}, [navigate]);
+	}, [navigate, refresh]);
 
 	const handleLogin = async () => {
 		setLoading(true);
