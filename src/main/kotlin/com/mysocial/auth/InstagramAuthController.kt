@@ -7,7 +7,6 @@ import com.mysocial.account.AccessToken
 import com.mysocial.account.AccessTokenRepository
 import com.mysocial.account.TokenRefreshStatus
 import com.mysocial.common.SocialPlatform
-import com.mysocial.config.AppServerProperties
 import com.mysocial.config.MetaAppProperties
 import com.mysocial.instagram.InstagramGraphClient
 import com.mysocial.instagram.WEBHOOK_SUBSCRIBED_FIELDS
@@ -39,7 +38,6 @@ class InstagramAuthController(
 	private val refreshTokenService: RefreshTokenService,
 	private val authCookieFactory: AuthCookieFactory,
 	private val metaAppProperties: MetaAppProperties,
-	private val appServerProperties: AppServerProperties,
 	private val instagramGraphClient: InstagramGraphClient,
 ) {
 	private val log = LoggerFactory.getLogger(javaClass)
@@ -94,7 +92,7 @@ class InstagramAuthController(
 			val refreshToken = refreshTokenService.issue(account.id)
 			accessTokenCookie = authCookieFactory.accessTokenCookie(jwt)
 			refreshTokenCookie = authCookieFactory.refreshTokenCookie(refreshToken)
-			"${appServerProperties.publicBaseUrl}/home"
+			metaAppProperties.webAuthCallbackUrl
 		}.getOrElse { ex ->
 			log.warn("Instagram OAuth 콜백 처리 실패", ex)
 			"${metaAppProperties.webAuthCallbackUrl}?error=${encode(ex.message ?: "unknown_error")}"
