@@ -2,7 +2,13 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
-import type { RecoveryCardResponse, SendLogResponse, SendLogSummaryResponse, TemplateRankingResponse } from "../api/types";
+import type {
+	FollowerStatsResponse,
+	RecoveryCardResponse,
+	SendLogResponse,
+	SendLogSummaryResponse,
+	TemplateRankingResponse,
+} from "../api/types";
 
 const INSIGHT_DISPLAY_COUNT = 2;
 
@@ -13,6 +19,47 @@ function pickRandom<T>(items: T[], count: number): T[] {
 		[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
 	}
 	return shuffled.slice(0, count);
+}
+
+function DeltaValue({ delta }: { delta: number | null | undefined }) {
+	if (delta === null || delta === undefined || delta === 0) return <span>-</span>;
+	if (delta > 0) return <span className="follower-delta-up">▲{delta}</span>;
+	return <span className="follower-delta-down">▼{Math.abs(delta)}</span>;
+}
+
+function formatMonthDay(isoDate: string): string {
+	const [, month, day] = isoDate.split("-");
+	return `${month}.${day}`;
+}
+
+function trendClause(diff: number, direction: "up" | "down", previousRange: string): string {
+	if (diff === 0) return `저번 주(${previousRange})랑 비슷한 추세예요 🙂`;
+	if (direction === "up") {
+		return diff > 0
+			? `저번 주(${previousRange})보다 ${diff}명 더 늘었어요 😆`
+			: `저번 주(${previousRange})보다 ${Math.abs(diff)}명 덜 늘었어요 🙂`;
+	}
+	return diff > 0
+		? `저번 주(${previousRange})보다 ${diff}명 덜 줄었어요 🙂`
+		: `저번 주(${previousRange})보다 ${Math.abs(diff)}명 더 줄었어요 😭`;
+}
+
+function formatFollowerInsight(stats: FollowerStatsResponse | null): string | null {
+	if (!stats || stats.weekDelta === null || stats.weekRangeStart === null || stats.weekRangeEnd === null) return null;
+	const range = `${formatMonthDay(stats.weekRangeStart)}~${formatMonthDay(stats.weekRangeEnd)}`;
+	const diff = stats.previousWeekDelta !== null ? stats.weekDelta - stats.previousWeekDelta : null;
+	const previousRange =
+		stats.previousWeekRangeStart !== null && stats.previousWeekRangeEnd !== null
+			? `${formatMonthDay(stats.previousWeekRangeStart)}~${formatMonthDay(stats.previousWeekRangeEnd)}`
+			: null;
+
+	if (stats.weekDelta >= 0) {
+		const base = `이번 주(${range})에 팔로워가 ${stats.weekDelta}명 증가했어요.😁`;
+		return diff === null || previousRange === null ? base : `${base} ${trendClause(diff, "up", previousRange)}`;
+	}
+	const decrease = Math.abs(stats.weekDelta);
+	const base = `이번 주(${range})에 팔로워가 ${decrease}명 감소했어요.😢`;
+	return diff === null || previousRange === null ? base : `${base} ${trendClause(diff, "down", previousRange)}`;
 }
 
 const QUICK_LINKS = [
@@ -30,6 +77,11 @@ export function HomePage() {
 	const [recentLogs, setRecentLogs] = useState<SendLogResponse[]>([]);
 	const [templateCount, setTemplateCount] = useState<number | null>(null);
 	const [unprocessedCount, setUnprocessedCount] = useState<number | null>(null);
+	const [followerStats, setFollowerStats] = useState<FollowerStatsResponse | null>(null);
+
+	useEffect(() => {
+		api.getFollowerGrowth().then(setFollowerStats).catch(() => setFollowerStats(null));
+	}, []);
 
 	useEffect(() => {
 		api.getSendLogSummary().then(setSummary).catch(() => setSummary(null));
@@ -70,6 +122,9 @@ export function HomePage() {
 			.catch(() => setUnprocessedCount(null));
 	}, []);
 
+	const followerInsight = formatFollowerInsight(followerStats);
+	const displayedInsights = followerInsight ? [followerInsight, ...insights] : insights;
+
 	return (
 		<div>
 			<div className="home-greeting">
@@ -81,9 +136,22 @@ export function HomePage() {
 				<h2>안녕하세요, {me?.username ?? "..."}님!</h2>
 			</div>
 
-			{insights.length > 0 && (
+			<div className="follower-stat-banner">
+				<div className="follower-stat-row">
+					<div className="follower-stat-main">
+						<div className="follower-stat-count">{followerStats?.currentCount ?? "-"}</div>
+						<div className="follower-stat-label">팔로워</div>
+					</div>
+					<div className="follower-stat-deltas">
+						WEEK <DeltaValue delta={followerStats?.weekDelta} /> / MONTH <DeltaValue delta={followerStats?.monthDelta} />
+					</div>
+				</div>
+				<div className="follower-stat-hint">(매일 05시에 업데이트 됩니다.)</div>
+			</div>
+
+			{displayedInsights.length > 0 && (
 				<div className="insight-list">
-					{insights.map((text) => (
+					{displayedInsights.map((text) => (
 						<p className="insight-item" key={text}>
 							{text}
 						</p>

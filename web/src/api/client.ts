@@ -5,6 +5,7 @@ import type {
 	ChartBucket,
 	ChartGranularity,
 	CreateTemplateRequest,
+	FollowerStatsResponse,
 	MediaUploadResponse,
 	PageResponse,
 	PostResponse,
@@ -119,6 +120,7 @@ export const api = {
 		return request<MediaUploadResponse>("/api/media", { method: "POST", body: formData });
 	},
 	getMe: () => request<AccountMeResponse>("/api/account/me"),
+	getFollowerGrowth: () => request<FollowerStatsResponse>("/api/account/follower-growth"),
 	getSettings: () => request<AccountSettingsResponse>("/api/settings"),
 	updateSettings: (body: UpdateAccountSettingsRequest) =>
 		request<AccountSettingsResponse>("/api/settings", { method: "PUT", body: JSON.stringify(body) }),

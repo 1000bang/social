@@ -658,6 +658,64 @@ textarea {
 	margin-bottom: 24px;
 }
 
+.follower-stat-banner {
+	margin-bottom: 20px;
+}
+
+.follower-stat-row {
+	display: flex;
+	align-items: baseline;
+	flex-wrap: wrap;
+	gap: 14px;
+}
+
+.follower-stat-main {
+	display: flex;
+	align-items: baseline;
+	gap: 10px;
+}
+
+.follower-stat-count {
+	font-size: 40px;
+	font-weight: 700;
+	color: var(--text);
+	line-height: 1;
+}
+
+.follower-stat-label {
+	font-size: 16px;
+	font-weight: 600;
+	color: var(--text-muted);
+}
+
+.follower-stat-deltas {
+	font-size: 16px;
+	font-weight: 600;
+	color: var(--text);
+}
+
+.follower-delta-up {
+	color: var(--danger);
+}
+
+.follower-delta-down {
+	color: var(--accent);
+}
+
+.follower-stat-hint {
+	font-size: 12px;
+	color: var(--text-muted);
+	margin-top: 4px;
+}
+
+@media (max-width: 640px) {
+	.follower-stat-row {
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 4px;
+	}
+}
+
 .home-greeting {
 	display: flex;
 	align-items: center;

@@ -100,6 +100,17 @@ export interface AccountMeResponse {
 	status: AccountStatus;
 }
 
+export interface FollowerStatsResponse {
+	currentCount: number | null;
+	weekDelta: number | null;
+	monthDelta: number | null;
+	previousWeekDelta: number | null;
+	weekRangeStart: string | null;
+	weekRangeEnd: string | null;
+	previousWeekRangeStart: string | null;
+	previousWeekRangeEnd: string | null;
+}
+
 export interface TemplateRankingResponse {
 	templateId: number;
 	templateName: string;

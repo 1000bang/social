@@ -9,6 +9,19 @@ const val WEBHOOK_SUBSCRIBED_FIELDS = "comments,messages,messaging_postbacks"
 class InstagramGraphClient {
 	private val restClient = RestClient.create("https://graph.instagram.com/v21.0")
 
+	fun getFollowerCount(accessToken: String): Int? =
+		restClient.get()
+			.uri { builder ->
+				builder.path("/me")
+					.queryParam("fields", "followers_count")
+					.queryParam("access_token", accessToken)
+					.build()
+			}
+			.retrieve()
+			.body(Map::class.java)
+			?.get("followers_count")
+			?.let { (it as? Number)?.toInt() }
+
 	fun getUserProfile(accessToken: String, targetUserId: String): Map<*, *> =
 		restClient.get()
 			.uri { builder ->
