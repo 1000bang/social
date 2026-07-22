@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { api } from "../api/client";
+
+export const POPUP_WINDOW_NAME = "instagram-login";
 
 const FEATURES = ["댓글 키워드 자동 응답", "DM 키워드 자동 응답", "발송 통계 & 인사이트"];
 
@@ -10,6 +12,8 @@ export function LoginPage() {
 	const [error, setError] = useState<string | null>(null);
 	const navigate = useNavigate();
 	const { refresh } = useAuth();
+	// 팝업이 메시지로 이미 처리됐는지 표시 — 팝업이 닫힌 뒤의 폴백 확인과 중복 처리되지 않게 한다.
+	const handledRef = useRef(false);
 
 	// 모바일에서 인스타그램 로그인 URL로 전체 페이지 이동하면 OS가 인스타그램 앱으로 가로채서
 	// 콜백이 끊기는 문제가 있어, 팝업으로 열고 postMessage로 완료를 전달받는다.
@@ -19,6 +23,8 @@ export function LoginPage() {
 		const handleMessage = async (event: MessageEvent) => {
 			if (event.origin !== window.location.origin) return;
 			if (event.data?.type !== "instagram-login") return;
+			if (handledRef.current) return;
+			handledRef.current = true;
 			setLoading(false);
 			if (event.data.status === "success") {
 				const authenticated = await refresh();
@@ -38,9 +44,10 @@ export function LoginPage() {
 	const handleLogin = async () => {
 		setLoading(true);
 		setError(null);
+		handledRef.current = false;
 		// 팝업은 클릭 이벤트 안에서 동기적으로 열어야 한다 (특히 iOS Safari) — await 이후에 열면 팝업 차단됨.
 		// 그래서 빈 창을 먼저 열고, URL을 받아온 뒤 그 창의 위치만 바꾼다.
-		const popup = window.open("about:blank", "instagram-login", "width=500,height=700");
+		const popup = window.open("about:blank", POPUP_WINDOW_NAME, "width=500,height=700");
 		try {
 			const { url } = await api.getLoginUrl();
 			if (!popup) {
@@ -48,11 +55,16 @@ export function LoginPage() {
 				return;
 			}
 			popup.location.href = url;
-			const checkClosed = window.setInterval(() => {
-				if (popup.closed) {
-					window.clearInterval(checkClosed);
-					setLoading(false);
-				}
+			const checkClosed = window.setInterval(async () => {
+				if (!popup.closed) return;
+				window.clearInterval(checkClosed);
+				if (handledRef.current) return;
+				handledRef.current = true;
+				// 팝업이 인스타그램 도메인을 거치는 동안 브라우저가 window.opener를 끊어버려
+				// 메시지를 못 받는 경우가 있다. 팝업이 닫혔다면 직접 인증 상태를 확인해 복구한다.
+				const authenticated = await refresh();
+				setLoading(false);
+				if (authenticated) navigate("/home", { replace: true });
 			}, 500);
 		} catch (err) {
 			popup?.close();
