@@ -46,8 +46,8 @@ class AccountSettings(
 	val id: Long = 0
 
 	companion object {
-		const val DEFAULT_FOLLOW_PROMPT_TEXT = "댓글을 남겨주셔서 감사합니다. 저를 팔로우해주셨다면 아래 버튼을 클릭해주세요!"
-		const val DEFAULT_FOLLOW_BUTTON_TITLE = "팔로우했어요"
+		const val DEFAULT_FOLLOW_PROMPT_TEXT = "댓글 남겨주셔서 감사합니다! 아래 버튼을 누르면 메시지가 발송돼요 😊"
+		const val DEFAULT_FOLLOW_BUTTON_TITLE = "메시지 보내주세요!"
 
 		const val DEFAULT_POST_PICKER_LIMIT = 5
 		const val MIN_POST_PICKER_LIMIT = 1

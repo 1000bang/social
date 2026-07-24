@@ -36,6 +36,9 @@ class DispatchTarget(
 
 	@Column(name = "recipient_platform_user_id", nullable = false)
 	val recipientPlatformUserId: String,
+
+	// 댓글 웹훅은 작성자 사용자명을 이미 포함하고 있어, 등록 시점에 바로 알 수 있다(DM 트리거는 이 시점엔 알 수 없어 null).
+	initialUsername: String? = null,
 ) : BaseTimeEntity() {
 
 	@Id
@@ -68,6 +71,16 @@ class DispatchTarget(
 	@Column(name = "next_retry_at")
 	var nextRetryAt: Instant? = null
 		protected set
+
+	// 댓글 웹훅에서 넘어온 값으로 시작해, 팔로우 확인 시점에 Graph API로 조회한 사용자명으로 갱신된다.
+	// 재시도 발송 시에는 API를 다시 호출하지 않고 이 값을 재사용해 메시지 본문의 {{사용자이름}} 치환을 유지한다.
+	@Column(name = "resolved_username")
+	var resolvedUsername: String? = initialUsername
+		protected set
+
+	fun recordUsername(username: String?) {
+		if (username != null) resolvedUsername = username
+	}
 
 	fun markAwaitingFollowCheck() {
 		status = DispatchStatus.AWAITING_FOLLOW_CHECK

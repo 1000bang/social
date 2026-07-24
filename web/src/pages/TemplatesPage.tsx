@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent, type MouseEvent } from "react";
 import { api } from "../api/client";
 import { Pagination } from "../components/Pagination";
+import { USERNAME_PLACEHOLDER, UsernameHighlightField } from "../components/UsernameHighlightField";
 import type {
 	AccountSettingsResponse,
 	ButtonInput,
@@ -174,6 +175,21 @@ export function TemplatesPage() {
 		setList(list.map((m, i) => (i === index ? { ...m, ...patch } : m)));
 	};
 
+	const toggleUsernamePlaceholder = (
+		list: MessageInput[],
+		setList: (v: MessageInput[]) => void,
+		index: number,
+		checked: boolean,
+	) => {
+		const current = list[index].textContent ?? "";
+		if (checked) {
+			if (current.includes(USERNAME_PLACEHOLDER)) return;
+			updateMessage(list, setList, index, { textContent: `${USERNAME_PLACEHOLDER}님, ${current}` });
+		} else {
+			updateMessage(list, setList, index, { textContent: current.split(USERNAME_PLACEHOLDER).join("") });
+		}
+	};
+
 	const addMessage = (list: MessageInput[], setList: (v: MessageInput[]) => void) => {
 		if (list.length >= maxMessages) return;
 		setList([...list, emptyMessage()]);
@@ -332,11 +348,25 @@ export function TemplatesPage() {
 							<option value="BUTTON">버튼형</option>
 						</select>
 						{message.messageType === "TEXT" && (
-							<textarea
-								placeholder="메시지 내용"
-								value={message.textContent ?? ""}
-								onChange={(e) => updateMessage(list, setList, index, { textContent: e.target.value })}
-							/>
+							<>
+								<UsernameHighlightField
+									multiline
+									placeholder="메시지 내용"
+									value={message.textContent ?? ""}
+									onChange={(v) => updateMessage(list, setList, index, { textContent: v })}
+								/>
+								<label className="checkbox-label">
+									<input
+										type="checkbox"
+										checked={(message.textContent ?? "").includes(USERNAME_PLACEHOLDER)}
+										onChange={(e) => toggleUsernamePlaceholder(list, setList, index, e.target.checked)}
+									/>
+									사용자 이름 넣기
+								</label>
+								<p className="hint">
+									메시지에 사용자 이름을 넣으면 매번 다른 문구처럼 보여, 동일 메시지 반복 발송으로 인한 계정 제한을 예방할 수 있어요.
+								</p>
+							</>
 						)}
 						{message.messageType === "IMAGE" && (
 							<div>
@@ -358,11 +388,23 @@ export function TemplatesPage() {
 						)}
 						{message.messageType === "BUTTON" && (
 							<div className="button-editor">
-								<textarea
+								<UsernameHighlightField
+									multiline
 									placeholder="메시지 내용"
 									value={message.textContent ?? ""}
-									onChange={(e) => updateMessage(list, setList, index, { textContent: e.target.value })}
+									onChange={(v) => updateMessage(list, setList, index, { textContent: v })}
 								/>
+								<label className="checkbox-label">
+									<input
+										type="checkbox"
+										checked={(message.textContent ?? "").includes(USERNAME_PLACEHOLDER)}
+										onChange={(e) => toggleUsernamePlaceholder(list, setList, index, e.target.checked)}
+									/>
+									사용자 이름 넣기
+								</label>
+								<p className="hint">
+									메시지에 사용자 이름을 넣으면 매번 다른 문구처럼 보여, 동일 메시지 반복 발송으로 인한 계정 제한을 예방할 수 있어요.
+								</p>
 								{(message.buttons ?? []).map((button, buttonIndex) => {
 									const urlInvalid = button.url.length > 0 && !isValidButtonUrl(button.url);
 									return (

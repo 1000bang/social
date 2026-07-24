@@ -12,7 +12,13 @@ class CommentTemplateMatcher(
 ) {
 	private val log = LoggerFactory.getLogger(javaClass)
 
-	fun match(postId: Long, commentPlatformId: String, commenterPlatformUserId: String, commentText: String) {
+	fun match(
+		postId: Long,
+		commentPlatformId: String,
+		commenterPlatformUserId: String,
+		commentText: String,
+		commenterUsername: String?,
+	) {
 		log.info("댓글 템플릿 매칭 진입: postId={}, commentId={}, commenterId={}", postId, commentPlatformId, commenterPlatformUserId)
 		val templates = templateRepository.findByPostId(postId)
 		if (templates.isEmpty()) {
@@ -35,7 +41,13 @@ class CommentTemplateMatcher(
 		log.info("댓글 키워드 매칭 결과: templateId={}, commentId={}, matched={}", template.id, commentPlatformId, matched)
 
 		if (matched) {
-			val target = dispatchTargetEnqueuer.enqueue(template, TriggerType.COMMENT, commentPlatformId, commenterPlatformUserId)
+			val target = dispatchTargetEnqueuer.enqueue(
+				template,
+				TriggerType.COMMENT,
+				commentPlatformId,
+				commenterPlatformUserId,
+				commenterUsername,
+			)
 			if (target == null) {
 				log.info("댓글 매칭 처리 종료: 이미 등록된 dispatchTarget (중복) templateId={}, commentId={}", template.id, commentPlatformId)
 			} else if (template.dispatchTime == null) {
@@ -45,7 +57,7 @@ class CommentTemplateMatcher(
 				log.info("초기 발송 예약됨(스케줄러 대기): dispatchTargetId={}, dispatchTime={}", target.id, template.dispatchTime)
 			}
 		} else if (template.nonKeywordReplyEnabled) {
-			dispatchExecutor.replyToNonMatchingComment(template.id, commentPlatformId)
+			dispatchExecutor.replyToNonMatchingComment(template.id, commentPlatformId, commenterUsername)
 		} else {
 			log.info("비키워드 댓글 응답 생략: 응답하지 않음으로 설정됨 templateId={}, commentId={}", template.id, commentPlatformId)
 		}

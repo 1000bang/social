@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { api } from "../api/client";
+import { USERNAME_PLACEHOLDER, UsernameHighlightField } from "../components/UsernameHighlightField";
 import type { AccountSettingsResponse } from "../api/types";
 
 const MIN_POST_PICKER_LIMIT = 1;
@@ -20,6 +21,15 @@ export function SettingsPage() {
 	const [followButtonTitle, setFollowButtonTitle] = useState("");
 	const [postPickerLimit, setPostPickerLimit] = useState(5);
 	const [maxMessagesPerAudience, setMaxMessagesPerAudience] = useState(3);
+
+	const toggleUsernamePlaceholder = (current: string, setValue: (v: string) => void, checked: boolean) => {
+		if (checked) {
+			if (current.includes(USERNAME_PLACEHOLDER)) return;
+			setValue(`${USERNAME_PLACEHOLDER}님, ${current}`);
+		} else {
+			setValue(current.split(USERNAME_PLACEHOLDER).join(""));
+		}
+	};
 
 	const applySettings = (settings: AccountSettingsResponse) => {
 		setCommentReplyText(settings.commentReplyText ?? "");
@@ -99,12 +109,23 @@ export function SettingsPage() {
 
 					<label>
 						3. 논팔로워 DM 기본 메시지
-						<input
+						<UsernameHighlightField
 							value={nonFollowerMessageText}
-							onChange={(e) => setNonFollowerMessageText(e.target.value)}
+							onChange={setNonFollowerMessageText}
 							placeholder="팔로우가 확인되지 않았어요! 팔로우 후 다시 요청 부탁드립니다."
 						/>
 					</label>
+					<label className="checkbox-label">
+						<input
+							type="checkbox"
+							checked={nonFollowerMessageText.includes(USERNAME_PLACEHOLDER)}
+							onChange={(e) => toggleUsernamePlaceholder(nonFollowerMessageText, setNonFollowerMessageText, e.target.checked)}
+						/>
+						사용자 이름 넣기
+					</label>
+					<p className="hint">
+						메시지에 사용자 이름을 넣으면 매번 다른 문구처럼 보여, 동일 메시지 반복 발송으로 인한 계정 제한을 예방할 수 있어요.
+					</p>
 				</fieldset>
 
 				<fieldset className="message-fieldset">
@@ -113,19 +134,30 @@ export function SettingsPage() {
 
 					<label>
 						팔로우 확인 메시지 문구
-						<input
+						<UsernameHighlightField
 							value={followPromptText}
-							onChange={(e) => setFollowPromptText(e.target.value)}
-							placeholder="댓글을 남겨주셔서 감사합니다. 저를 팔로우해주셨다면 아래 버튼을 클릭해주세요!"
+							onChange={setFollowPromptText}
+							placeholder="댓글 남겨주셔서 감사합니다! 아래 버튼을 누르면 메시지가 발송돼요 😊"
 						/>
 					</label>
+					<label className="checkbox-label">
+						<input
+							type="checkbox"
+							checked={followPromptText.includes(USERNAME_PLACEHOLDER)}
+							onChange={(e) => toggleUsernamePlaceholder(followPromptText, setFollowPromptText, e.target.checked)}
+						/>
+						사용자 이름 넣기
+					</label>
+					<p className="hint">
+						댓글로 들어온 경우 실제 이름으로, DM으로 들어온 경우 이름을 알 수 없어 "고객"으로 표시돼요.
+					</p>
 
 					<label>
 						확인 버튼 문구
 						<input
 							value={followButtonTitle}
 							onChange={(e) => setFollowButtonTitle(e.target.value)}
-							placeholder="팔로우했어요"
+							placeholder="메시지 보내주세요!"
 						/>
 					</label>
 				</fieldset>

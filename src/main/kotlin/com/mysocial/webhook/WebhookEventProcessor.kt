@@ -133,7 +133,7 @@ class WebhookEventProcessor(
 		)
 
 		log.info("댓글 템플릿 매칭 시작: postId={}, commentId={}, fromId={}", post.id, value.id, from.id)
-		commentTemplateMatcher.match(post.id, value.id, from.id, text)
+		commentTemplateMatcher.match(post.id, value.id, from.id, text, from.username)
 	}
 
 	private fun handleMessage(account: Account, event: WebhookMessagingEvent) {

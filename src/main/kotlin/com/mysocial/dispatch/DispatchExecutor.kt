@@ -34,7 +34,7 @@ class DispatchExecutor(
 	private val log = LoggerFactory.getLogger(javaClass)
 
 	@Transactional
-	fun replyToNonMatchingComment(templateId: Long, commentId: String) {
+	fun replyToNonMatchingComment(templateId: Long, commentId: String, commenterUsername: String?) {
 		log.info("비키워드 댓글 답글 진입: templateId={}, commentId={}", templateId, commentId)
 		val template = templateRepository.findById(templateId).orElse(null)
 		if (template == null) {
@@ -48,7 +48,8 @@ class DispatchExecutor(
 		}
 
 		runCatching {
-			instagramMessagingClient.replyToComment(token, commentId, template.resolvedNonKeywordCommentReplyText())
+			val replyText = MessagePayloadBuilder.applyUsernamePlaceholder(template.resolvedNonKeywordCommentReplyText(), commenterUsername)
+			instagramMessagingClient.replyToComment(token, commentId, replyText)
 		}.onSuccess {
 			log.info("비키워드 댓글 답글 완료: templateId={}, commentId={}", templateId, commentId)
 		}.onFailure { ex ->
@@ -85,17 +86,18 @@ class DispatchExecutor(
 
 		runCatching {
 			if (target.triggerType == TriggerType.COMMENT) {
-				instagramMessagingClient.replyToComment(token, target.platformTriggerId, template.resolvedCommentReplyText())
+				val replyText = MessagePayloadBuilder.applyUsernamePlaceholder(template.resolvedCommentReplyText(), target.resolvedUsername)
+				instagramMessagingClient.replyToComment(token, target.platformTriggerId, replyText)
 				instagramMessagingClient.sendPrivateReply(
 					token,
 					target.platformTriggerId,
-					MessagePayloadBuilder.promptWithFollowButton(followPromptText, followButtonTitle, target.id),
+					MessagePayloadBuilder.promptWithFollowButton(followPromptText, followButtonTitle, target.id, target.resolvedUsername),
 				)
 			} else {
 				instagramMessagingClient.sendDirectMessage(
 					token,
 					target.recipientPlatformUserId,
-					MessagePayloadBuilder.promptWithFollowButton(followPromptText, followButtonTitle, target.id),
+					MessagePayloadBuilder.promptWithFollowButton(followPromptText, followButtonTitle, target.id, target.resolvedUsername),
 				)
 			}
 			target.markAwaitingFollowCheck()
@@ -194,6 +196,8 @@ class DispatchExecutor(
 			return
 		}
 
+		target.recordUsername(username)
+
 		val audienceType = if (isFollowing) AudienceType.FOLLOWER else AudienceType.NON_FOLLOWER
 		if (!hasSendCapacity(template.account.id)) {
 			log.info("시간당 발송 한도 근접, 재시도 예약: dispatchTargetId={}", dispatchTargetId)
@@ -233,7 +237,7 @@ class DispatchExecutor(
 		}
 
 		runCatching {
-			sendAndRecordAudienceMessages(target, template, audienceType, token, target.recipientPlatformUserId, null)
+			sendAndRecordAudienceMessages(target, template, audienceType, token, target.recipientPlatformUserId, target.resolvedUsername)
 		}.onFailure { ex ->
 			handleSendFailure(target, DispatchStage.AUDIENCE_MESSAGE, audienceType, ex) {
 				sendLogRepository.save(
@@ -257,7 +261,7 @@ class DispatchExecutor(
 		recipientId: String,
 		username: String?,
 	) {
-		sendAudienceMessages(template, audienceType, token, recipientId)
+		sendAudienceMessages(template, audienceType, token, recipientId, username)
 		if (audienceType == AudienceType.FOLLOWER) target.markSent(Instant.now()) else target.markNonFollowerSent(Instant.now())
 		sendLogRepository.save(
 			SendLog(
@@ -309,13 +313,13 @@ class DispatchExecutor(
 		return Duration.ofMinutes(minutes)
 	}
 
-	private fun sendAudienceMessages(template: Template, audienceType: AudienceType, token: String, recipientId: String) {
+	private fun sendAudienceMessages(template: Template, audienceType: AudienceType, token: String, recipientId: String, username: String?) {
 		val messages = template.messages.filter { it.audienceType == audienceType }.sortedBy { it.orderIndex }
 		if (messages.isEmpty()) {
 			log.warn("발송할 메시지가 없습니다: templateId={}, audienceType={}", template.id, audienceType)
 		}
 		messages.forEach { message ->
-			instagramMessagingClient.sendDirectMessage(token, recipientId, MessagePayloadBuilder.fromTemplateMessage(message))
+			instagramMessagingClient.sendDirectMessage(token, recipientId, MessagePayloadBuilder.fromTemplateMessage(message, username))
 		}
 	}
 

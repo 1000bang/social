@@ -192,7 +192,7 @@ class CommentRecoveryService(
 			),
 		)
 		log.info("복구 처리: templateId={}, commentId={}", template.id, commentId)
-		commentTemplateMatcher.match(template.post.id, commentId, fromId, text)
+		commentTemplateMatcher.match(template.post.id, commentId, fromId, text, fromUsername)
 	}
 
 	private fun templateForPost(accountId: Long, postId: Long): Template {

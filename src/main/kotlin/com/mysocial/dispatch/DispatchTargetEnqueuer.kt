@@ -10,7 +10,13 @@ class DispatchTargetEnqueuer(
 ) {
 	private val log = LoggerFactory.getLogger(javaClass)
 
-	fun enqueue(template: Template, triggerType: TriggerType, platformTriggerId: String, recipientPlatformUserId: String): DispatchTarget? {
+	fun enqueue(
+		template: Template,
+		triggerType: TriggerType,
+		platformTriggerId: String,
+		recipientPlatformUserId: String,
+		initialUsername: String? = null,
+	): DispatchTarget? {
 		val alreadyQueued = dispatchTargetRepository.existsByTemplateIdAndTriggerTypeAndPlatformTriggerId(
 			template.id,
 			triggerType,
@@ -32,6 +38,7 @@ class DispatchTargetEnqueuer(
 				triggerType = triggerType,
 				platformTriggerId = platformTriggerId,
 				recipientPlatformUserId = recipientPlatformUserId,
+				initialUsername = initialUsername,
 			),
 		)
 		log.info(
