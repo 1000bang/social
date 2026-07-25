@@ -545,7 +545,12 @@ textarea {
 	pointer-events: none;
 	white-space: pre-wrap;
 	word-wrap: break-word;
-	font: inherit;
+	/* input/textarea 와 폰트 지표(크기·굵기·줄높이)가 정확히 같아야 커서 위치가 어긋나지 않는다.
+	   부모(label 등)의 font-weight/size를 그대로 상속하면 실제 입력창과 어긋나므로 고정값을 쓴다. */
+	font-family: inherit;
+	font-size: 15px;
+	font-weight: 400;
+	line-height: 1.5;
 	border: 1px solid transparent;
 	border-radius: 6px;
 	padding: 6px 10px;
@@ -558,7 +563,6 @@ textarea {
 
 .username-token {
 	color: var(--accent);
-	font-weight: 700;
 	background: rgba(14, 165, 233, 0.12);
 	border-radius: 3px;
 }

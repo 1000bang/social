@@ -110,6 +110,7 @@ export function SettingsPage() {
 					<label>
 						3. 논팔로워 DM 기본 메시지
 						<UsernameHighlightField
+							multiline
 							value={nonFollowerMessageText}
 							onChange={setNonFollowerMessageText}
 							placeholder="팔로우가 확인되지 않았어요! 팔로우 후 다시 요청 부탁드립니다."
@@ -135,6 +136,7 @@ export function SettingsPage() {
 					<label>
 						팔로우 확인 메시지 문구
 						<UsernameHighlightField
+							multiline
 							value={followPromptText}
 							onChange={setFollowPromptText}
 							placeholder="댓글 남겨주셔서 감사합니다! 아래 버튼을 누르면 메시지가 발송돼요 😊"

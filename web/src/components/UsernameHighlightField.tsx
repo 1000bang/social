@@ -45,6 +45,7 @@ export function UsernameHighlightField({ value, onChange, placeholder, multiline
 			{multiline ? (
 				<textarea
 					className="username-highlight-input"
+					rows={3}
 					value={value}
 					placeholder={placeholder}
 					onChange={(e: ChangeEvent<HTMLTextAreaElement>) => onChange(e.target.value)}
