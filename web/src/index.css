@@ -15,6 +15,7 @@
 	font: 15px/1.5 system-ui, "Segoe UI", Roboto, sans-serif;
 	color: var(--text);
 	background: var(--bg);
+	color-scheme: light;
 }
 
 * {

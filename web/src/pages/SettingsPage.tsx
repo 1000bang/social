@@ -194,7 +194,7 @@ export function SettingsPage() {
 					</label>
 				</fieldset>
 
-				<button type="submit" disabled={saving}>
+				<button type="submit" className="primary-button" disabled={saving}>
 					{saving ? "저장 중..." : "저장"}
 				</button>
 			</form>
