@@ -3,11 +3,14 @@ import { useRef, type ChangeEvent, type ReactNode, type UIEvent } from "react";
 // 발송 시 실제 수신자 사용자명으로 치환되는 토큰. 백엔드 MessagePayloadBuilder.USERNAME_PLACEHOLDER와 동일해야 한다.
 export const USERNAME_PLACEHOLDER = "{{사용자이름}}";
 
+const MAX_LENGTH = 1000;
+
 interface UsernameHighlightFieldProps {
 	value: string;
 	onChange: (value: string) => void;
 	placeholder?: string;
 	multiline?: boolean;
+	maxLength?: number;
 }
 
 function renderHighlighted(text: string): ReactNode[] {
@@ -28,13 +31,19 @@ function renderHighlighted(text: string): ReactNode[] {
 
 // 실제 input/textarea 위에 투명한 글자색으로 겹쳐두고, 뒤에 같은 텍스트를 색깔 입혀 보여주는 방식으로
 // {{사용자이름}} 부분만 강조 색으로 표시한다. 입력/커서/선택 동작은 그대로 네이티브 요소가 처리한다.
-export function UsernameHighlightField({ value, onChange, placeholder, multiline }: UsernameHighlightFieldProps) {
+export function UsernameHighlightField({ value, onChange, placeholder, multiline, maxLength = MAX_LENGTH }: UsernameHighlightFieldProps) {
 	const backdropRef = useRef<HTMLDivElement>(null);
+	const count = value.length;
+	const isOver = count > maxLength;
 
 	const syncScroll = (e: UIEvent<HTMLInputElement | HTMLTextAreaElement>) => {
 		if (!backdropRef.current) return;
 		backdropRef.current.scrollTop = e.currentTarget.scrollTop;
 		backdropRef.current.scrollLeft = e.currentTarget.scrollLeft;
+	};
+
+	const handleChange = (newValue: string) => {
+		if (newValue.length <= maxLength) onChange(newValue);
 	};
 
 	return (
@@ -48,7 +57,7 @@ export function UsernameHighlightField({ value, onChange, placeholder, multiline
 					rows={3}
 					value={value}
 					placeholder={placeholder}
-					onChange={(e: ChangeEvent<HTMLTextAreaElement>) => onChange(e.target.value)}
+					onChange={(e: ChangeEvent<HTMLTextAreaElement>) => handleChange(e.target.value)}
 					onScroll={syncScroll}
 				/>
 			) : (
@@ -56,9 +65,14 @@ export function UsernameHighlightField({ value, onChange, placeholder, multiline
 					className="username-highlight-input"
 					value={value}
 					placeholder={placeholder}
-					onChange={(e: ChangeEvent<HTMLInputElement>) => onChange(e.target.value)}
+					onChange={(e: ChangeEvent<HTMLInputElement>) => handleChange(e.target.value)}
 					onScroll={syncScroll}
 				/>
+			)}
+			{multiline && (
+				<div className="username-highlight-counter" style={{ color: isOver ? "red" : undefined }}>
+					{count}/{maxLength}
+				</div>
 			)}
 		</div>
 	);
