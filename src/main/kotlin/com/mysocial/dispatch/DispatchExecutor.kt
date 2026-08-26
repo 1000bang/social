@@ -104,16 +104,41 @@ class DispatchExecutor(
 		}.onSuccess {
 			log.info("초기 발송 완료: dispatchTargetId={}, status={}", dispatchTargetId, target.status)
 		}.onFailure { ex ->
-			handleSendFailure(target, DispatchStage.INITIAL_PROMPT, null, ex) {
+			if (instagramErrorClassifier.isConversationArchived(ex) && target.triggerType == TriggerType.COMMENT) {
+				log.warn("DM 발송 불가(대화 보관/삭제), 댓글 답글로 fallback: dispatchTargetId={}", dispatchTargetId)
+				runCatching {
+					val keyword = template.keywords.firstOrNull()?.keyword
+					val fallbackText = if (keyword != null) {
+						"안녕하세요 ! DM이 전달되지 않아 댓글로 남깁니다 😢 먼저 DM으로 \"$keyword\" 라고 보내주시면 안내드릴게요 !"
+					} else {
+						"안녕하세요 ! DM이 전달되지 않아 댓글로 남깁니다 😢 먼저 DM 주시면 안내드릴게요 !"
+					}
+					instagramMessagingClient.replyToComment(token, target.platformTriggerId, fallbackText)
+				}.onFailure { fallbackEx ->
+					log.warn("댓글 답글 fallback도 실패: dispatchTargetId={}", dispatchTargetId, fallbackEx)
+				}
+				target.markFailed(Instant.now())
 				sendLogRepository.save(
 					SendLog(
 						template = template,
 						audienceType = null,
 						recipientPlatformUserId = target.recipientPlatformUserId,
 						result = SendResult.FAILED,
-						failureReason = ex.message,
+						failureReason = "DM 불가(대화 보관/삭제) - 댓글 답글 fallback 시도",
 					),
 				)
+			} else {
+				handleSendFailure(target, DispatchStage.INITIAL_PROMPT, null, ex) {
+					sendLogRepository.save(
+						SendLog(
+							template = template,
+							audienceType = null,
+							recipientPlatformUserId = target.recipientPlatformUserId,
+							result = SendResult.FAILED,
+							failureReason = ex.message,
+						),
+					)
+				}
 			}
 		}
 	}

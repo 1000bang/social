@@ -9,6 +9,9 @@ import org.springframework.web.client.ResourceAccessException
 // 4: 앱 단위 요청 한도 초과, 17: 사용자 단위 요청 한도 초과, 32: 페이지 단위 요청 한도 초과, 613: API 호출 한도 초과.
 private val RATE_LIMIT_ERROR_CODES = setOf(4, 17, 32, 613)
 
+// 대화를 보관/삭제한 사용자에게 DM을 보낼 때 Meta가 돌려주는 error_subcode.
+private const val CONVERSATION_ARCHIVED_SUBCODE = 2534001
+
 @Component
 class InstagramErrorClassifier(
 	private val objectMapper: ObjectMapper,
@@ -22,6 +25,13 @@ class InstagramErrorClassifier(
 		else -> false
 	}
 
+	// DM 대화가 보관/삭제된 경우 — 재시도해도 해소되지 않으므로 댓글 답글로 fallback해야 한다.
+	fun isConversationArchived(ex: Throwable): Boolean =
+		ex is HttpStatusCodeException && errorSubcode(ex) == CONVERSATION_ARCHIVED_SUBCODE
+
 	private fun errorCode(ex: HttpStatusCodeException): Int? =
 		runCatching { objectMapper.readTree(ex.responseBodyAsString).path("error").path("code").asInt() }.getOrNull()
+
+	private fun errorSubcode(ex: HttpStatusCodeException): Int? =
+		runCatching { objectMapper.readTree(ex.responseBodyAsString).path("error").path("error_subcode").asInt() }.getOrNull()
 }

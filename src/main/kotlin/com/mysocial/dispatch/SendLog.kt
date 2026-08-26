@@ -36,7 +36,7 @@ class SendLog(
 	@Column(nullable = false)
 	val result: SendResult,
 
-	@Column(name = "failure_reason")
+	@Column(name = "failure_reason", length = 2000)
 	val failureReason: String? = null,
 ) : BaseTimeEntity() {
 
