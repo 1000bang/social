@@ -6,8 +6,10 @@ import com.mysocial.account.AccountRepository
 import com.mysocial.account.TokenRefreshScheduler
 import com.mysocial.account.TokenRefreshStatus
 import com.mysocial.auth.CURRENT_ACCOUNT_ID_ATTRIBUTE
+import com.mysocial.config.MetaAppProperties
 import com.mysocial.dispatch.DispatchExecutor
 import org.slf4j.LoggerFactory
+import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -16,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.client.HttpClientErrorException
+import org.springframework.web.server.ResponseStatusException
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
@@ -27,6 +30,7 @@ class DebugInstagramController(
 	private val instagramGraphClient: InstagramGraphClient,
 	private val tokenRefreshScheduler: TokenRefreshScheduler,
 	private val dispatchExecutor: DispatchExecutor,
+	private val metaAppProperties: MetaAppProperties,
 ) {
 	private val log = LoggerFactory.getLogger(javaClass)
 
@@ -65,13 +69,18 @@ class DebugInstagramController(
 		instagramGraphClient.getSubscribedApps(token, igUserId)
 	}
 
-	// 인스타그램 액세스 토큰을 직접 교체한다. VM에서 curl로 호출 가능.
-	// curl -X POST "https://social.1000bang.info/api/debug/instagram/update-token?token=NEW_TOKEN&accountId=2"
+	// 인스타그램 액세스 토큰을 직접 교체한다. VM에서 curl로 호출 가능 (인증 불필요, appSecret으로 보호).
+	// curl -X POST https://social.1000bang.info/api/debug/instagram/update-token \
+	//   --data-urlencode "secret=APP_SECRET" \
+	//   --data-urlencode "token=NEW_TOKEN" \
+	//   --data-urlencode "accountId=2"
 	@PostMapping("/update-token")
 	fun updateToken(
+		@RequestParam secret: String,
 		@RequestParam token: String,
 		@RequestParam accountId: Long,
 	): Map<String, Any> {
+		if (secret != metaAppProperties.appSecret) throw ResponseStatusException(HttpStatus.FORBIDDEN, "secret 불일치")
 		val account = accountRepository.findById(accountId).orElseThrow { IllegalArgumentException("accountId=$accountId 계정 없음") }
 		val saved = accessTokenRepository.save(
 			AccessToken(

@@ -22,6 +22,7 @@ class JwtAuthenticationFilter(
 		if (!path.startsWith("/api/")) return true
 		if (path.startsWith("/api/auth/")) return true
 		if (path.startsWith("/api/media/") && request.method == "GET") return true
+		if (path == "/api/debug/instagram/update-token") return true
 		return false
 	}
 
