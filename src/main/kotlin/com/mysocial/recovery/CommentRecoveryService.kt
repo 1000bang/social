@@ -29,54 +29,62 @@ class CommentRecoveryService(
 ) {
 	private val log = LoggerFactory.getLogger(javaClass)
 
+	// 템플릿 카드 목록만 반환 (댓글 내용 미포함 — 빠른 로딩용).
+	// archived 건수만 카운트하고 live 구간은 조회하지 않는다.
 	@Transactional(readOnly = true)
 	fun listRecoveryCards(accountId: Long): List<RecoveryCardResponse> {
 		val token = latestToken(accountId) ?: return emptyList()
-		// 사용 중지된 템플릿은 의도적으로 꺼둔 것이므로 다시 사용으로 전환하기 전까지는 카드에 노출하지 않는다.
 		val templates = templateRepository.findAllByAccountId(accountId).filter { it.activeYn }
-		val checkpoint = recoveryCheckpointRepository.findByAccountId(accountId)?.lastCheckedAt
 
 		return templates.mapNotNull { template ->
-			val archived = unprocessedCommentRepository.findByTemplateId(template.id)
-			val archivedIds = archived.map { it.platformCommentId }.toSet()
-
-			val live = if (checkpoint != null) {
-				runCatching { fetchUnrepliedComments(token, template.post.platformPostId, template, checkpoint) }
-					.onFailure { log.warn("댓글 조회 실패(Reel 또는 권한 없음): templateId={}, postId={}", template.id, template.post.platformPostId, it) }
-					.getOrDefault(emptyList())
-					.filter { it.id !in archivedIds }
-			} else {
-				emptyList()
-			}
-
-			val comments = archived.map {
-				RecoveryCommentResponse(
-					commentId = it.platformCommentId,
-					authorUsername = it.authorUsername,
-					text = it.text,
-					timestamp = it.publishedAt,
-				)
-			} + live.mapNotNull { item ->
-				val ts = parseTimestamp(item.timestamp) ?: return@mapNotNull null
-				RecoveryCommentResponse(
-					commentId = item.id,
-					authorUsername = item.from?.username,
-					text = item.text ?: "",
-					timestamp = ts,
-				)
-			}
-			if (comments.isEmpty()) return@mapNotNull null
-
+			val archivedCount = unprocessedCommentRepository.findByTemplateId(template.id).size
 			val thumbnailUrl = runCatching { instagramGraphClient.getMediaThumbnail(token, template.post.platformPostId) }.getOrNull()
-
 			RecoveryCardResponse(
 				postId = template.post.id,
 				templateId = template.id,
 				templateName = template.name,
 				thumbnailUrl = thumbnailUrl,
-				comments = comments.sortedByDescending { it.timestamp },
+				commentCount = archivedCount,
 			)
 		}
+	}
+
+	// 특정 템플릿의 미처리 댓글 목록 조회 (카드 클릭 시 호출).
+	@Transactional(readOnly = true)
+	fun listRecoveryComments(accountId: Long, postId: Long): List<RecoveryCommentResponse> {
+		val token = latestToken(accountId) ?: return emptyList()
+		val template = templateForPost(accountId, postId)
+		val checkpoint = recoveryCheckpointRepository.findByAccountId(accountId)?.lastCheckedAt
+
+		val archived = unprocessedCommentRepository.findByTemplateId(template.id)
+		val archivedIds = archived.map { it.platformCommentId }.toSet()
+
+		val live = if (checkpoint != null) {
+			runCatching { fetchUnrepliedComments(token, template.post.platformPostId, template, checkpoint) }
+				.onFailure { log.warn("댓글 조회 실패(Reel 또는 권한 없음): templateId={}, postId={}", template.id, template.post.platformPostId, it) }
+				.getOrDefault(emptyList())
+				.filter { it.id !in archivedIds }
+		} else {
+			emptyList()
+		}
+
+		val comments = archived.map {
+			RecoveryCommentResponse(
+				commentId = it.platformCommentId,
+				authorUsername = it.authorUsername,
+				text = it.text,
+				timestamp = it.publishedAt,
+			)
+		} + live.mapNotNull { item ->
+			val ts = parseTimestamp(item.timestamp) ?: return@mapNotNull null
+			RecoveryCommentResponse(
+				commentId = item.id,
+				authorUsername = item.from?.username,
+				text = item.text ?: "",
+				timestamp = ts,
+			)
+		}
+		return comments.sortedByDescending { it.timestamp }
 	}
 
 	@Transactional

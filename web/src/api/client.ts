@@ -10,6 +10,7 @@ import type {
 	PageResponse,
 	PostResponse,
 	RecoveryCardResponse,
+	RecoveryCommentResponse,
 	SendLogInsightResponse,
 	SendLogResponse,
 	SendLogSummaryResponse,
@@ -125,6 +126,7 @@ export const api = {
 	updateSettings: (body: UpdateAccountSettingsRequest) =>
 		request<AccountSettingsResponse>("/api/settings", { method: "PUT", body: JSON.stringify(body) }),
 	getRecoveryCards: () => request<RecoveryCardResponse[]>("/api/recovery/cards"),
+	getRecoveryComments: (postId: number) => request<RecoveryCommentResponse[]>(`/api/recovery/posts/${postId}/comments`),
 	processRecoveryComment: (postId: number, commentId: string) =>
 		request<void>(`/api/recovery/posts/${postId}/comments/${commentId}/process`, { method: "POST" }),
 	processRecoveryPostAll: (postId: number) =>

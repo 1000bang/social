@@ -19,6 +19,13 @@ class CommentRecoveryController(
 	fun cards(@RequestAttribute(CURRENT_ACCOUNT_ID_ATTRIBUTE) accountId: Long): List<RecoveryCardResponse> =
 		commentRecoveryService.listRecoveryCards(accountId)
 
+	@GetMapping("/posts/{postId}/comments")
+	fun comments(
+		@RequestAttribute(CURRENT_ACCOUNT_ID_ATTRIBUTE) accountId: Long,
+		@PathVariable postId: Long,
+	): List<RecoveryCommentResponse> =
+		commentRecoveryService.listRecoveryComments(accountId, postId)
+
 	@PostMapping("/posts/{postId}/comments/{commentId}/process")
 	fun processComment(
 		@RequestAttribute(CURRENT_ACCOUNT_ID_ATTRIBUTE) accountId: Long,

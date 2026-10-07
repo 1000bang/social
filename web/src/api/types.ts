@@ -165,5 +165,5 @@ export interface RecoveryCardResponse {
 	templateId: number;
 	templateName: string;
 	thumbnailUrl: string | null;
-	comments: RecoveryCommentResponse[];
+	commentCount: number;
 }

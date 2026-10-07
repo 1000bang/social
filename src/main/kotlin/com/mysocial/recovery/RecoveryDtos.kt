@@ -7,7 +7,7 @@ data class RecoveryCardResponse(
 	val templateId: Long,
 	val templateName: String,
 	val thumbnailUrl: String?,
-	val comments: List<RecoveryCommentResponse>,
+	val commentCount: Int,
 )
 
 data class RecoveryCommentResponse(

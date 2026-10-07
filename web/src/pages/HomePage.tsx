@@ -118,7 +118,7 @@ export function HomePage() {
 	useEffect(() => {
 		api
 			.getRecoveryCards()
-			.then((cards: RecoveryCardResponse[]) => setUnprocessedCount(cards.reduce((sum, c) => sum + c.comments.length, 0)))
+			.then((cards: RecoveryCardResponse[]) => setUnprocessedCount(cards.reduce((sum, c) => sum + c.commentCount, 0)))
 			.catch(() => setUnprocessedCount(null));
 	}, []);
 
