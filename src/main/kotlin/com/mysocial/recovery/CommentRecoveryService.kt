@@ -41,7 +41,9 @@ class CommentRecoveryService(
 			val archivedIds = archived.map { it.platformCommentId }.toSet()
 
 			val live = if (checkpoint != null) {
-				fetchUnrepliedComments(token, template.post.platformPostId, template, checkpoint)
+				runCatching { fetchUnrepliedComments(token, template.post.platformPostId, template, checkpoint) }
+					.onFailure { log.warn("댓글 조회 실패(Reel 또는 권한 없음): templateId={}, postId={}", template.id, template.post.platformPostId, it) }
+					.getOrDefault(emptyList())
 					.filter { it.id !in archivedIds }
 			} else {
 				emptyList()
@@ -127,7 +129,9 @@ class CommentRecoveryService(
 
 		val checkpoint = recoveryCheckpointRepository.findByAccountId(accountId)?.lastCheckedAt
 		if (checkpoint != null) {
-			val liveComments = fetchUnrepliedComments(token, template.post.platformPostId, template, checkpoint)
+			val liveComments = runCatching { fetchUnrepliedComments(token, template.post.platformPostId, template, checkpoint) }
+				.onFailure { log.warn("댓글 조회 실패(Reel 또는 권한 없음): templateId={}, postId={}", template.id, template.post.platformPostId, it) }
+				.getOrDefault(emptyList())
 				.sortedBy { parseTimestamp(it.timestamp) ?: Instant.EPOCH }
 			log.info("일괄 복구 처리 시작(실시간 구간): templateId={}, count={}", template.id, liveComments.size)
 			liveComments.forEach { item ->
@@ -150,10 +154,12 @@ class CommentRecoveryService(
 
 		val templates = templateRepository.findAllByAccountId(accountId).filter { it.activeYn }
 		templates.forEach { template ->
-			val comments = fetchUnrepliedComments(token, template.post.platformPostId, template, since)
-			comments.forEach { item ->
-				val ts = parseTimestamp(item.timestamp) ?: return@forEach
-				val fromId = item.from?.id ?: return@forEach
+			val comments = runCatching { fetchUnrepliedComments(token, template.post.platformPostId, template, since) }
+				.onFailure { log.warn("댓글 조회 실패(Reel 또는 권한 없음): templateId={}, postId={}", template.id, template.post.platformPostId, it) }
+				.getOrDefault(emptyList())
+			comments.forEach commentLoop@{ item ->
+				val ts = parseTimestamp(item.timestamp) ?: return@commentLoop
+				val fromId = item.from?.id ?: return@commentLoop
 				if (!unprocessedCommentRepository.existsByTemplateIdAndPlatformCommentId(template.id, item.id)) {
 					unprocessedCommentRepository.save(
 						UnprocessedComment(
