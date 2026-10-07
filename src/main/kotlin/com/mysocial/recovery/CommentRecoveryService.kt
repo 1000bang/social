@@ -46,7 +46,7 @@ class CommentRecoveryService(
 				thumbnailUrl = thumbnailUrl,
 				commentCount = archivedCount,
 			)
-		}
+		}.sortedByDescending { it.templateId }
 	}
 
 	// 특정 템플릿의 미처리 댓글 목록 조회 (카드 클릭 시 호출).

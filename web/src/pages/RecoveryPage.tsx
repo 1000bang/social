@@ -116,24 +116,26 @@ export function RecoveryPage() {
 			{loadingCards && <p>불러오는 중...</p>}
 			{!loadingCards && cards.length === 0 && <p>등록된 템플릿이 없습니다.</p>}
 
-			{cards.map((card) => (
-				<div key={card.postId} className="recovery-card" onClick={() => openCard(card)} style={{ cursor: "pointer" }}>
-					<div className="recovery-card-header">
-						{card.thumbnailUrl ? (
-							<img src={card.thumbnailUrl} alt={card.templateName} className="recovery-card-thumbnail" />
-						) : (
-							<div className="recovery-card-thumbnail recovery-card-thumbnail-placeholder">이미지 없음</div>
-						)}
-						<div>
-							<strong>{card.templateName}</strong>
-							<p className="hint">
-								{card.commentCount > 0 ? `미처리 댓글 ${card.commentCount}개` : "미처리 댓글 없음"}
-							</p>
+			<div className="recovery-card-grid">
+				{cards.map((card) => (
+					<div key={card.postId} className="recovery-card" onClick={() => openCard(card)}>
+						<div className="recovery-card-header">
+							{card.thumbnailUrl ? (
+								<img src={card.thumbnailUrl} alt={card.templateName} className="recovery-card-thumbnail" />
+							) : (
+								<div className="recovery-card-thumbnail recovery-card-thumbnail-placeholder">이미지 없음</div>
+							)}
+							<div>
+								<strong>{card.templateName}</strong>
+								<p className="hint">
+									{card.commentCount > 0 ? `미처리 ${card.commentCount}개` : "미처리 없음"}
+								</p>
+							</div>
+							<span style={{ marginLeft: "auto", color: "var(--text-muted)" }}>›</span>
 						</div>
-						<span style={{ marginLeft: "auto", color: "var(--text-muted)" }}>›</span>
 					</div>
-				</div>
-			))}
+				))}
+			</div>
 		</div>
 	);
 }
